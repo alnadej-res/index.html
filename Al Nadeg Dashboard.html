@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<!-- saved from url=(0057)file:///C:/Users/Lenovo/Downloads/nadeg_dashboard_19.html -->
+<html lang="ar" dir="rtl"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الناضج — لوحة التحكم | Al Nadeg Dashboard</title>
+<link href="./Al Nadeg Dashboard_files/css2" rel="stylesheet">
+<script src="./Al Nadeg Dashboard_files/chart.umd.js.download"></script>
+<style>
+:root {
+  --bg: #0A0E1A;
+  --bg2: #111827;
+  --bg3: #1C2333;
+  --bg4: #242d3f;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #F0F4FF;
+  --text2: #8B95B0;
+  --text3: #5A6480;
+  --green: #00D97E;
+  --green2: #00A65E;
+  --green-bg: rgba(0,217,126,0.08);
+  --red: #FF4D6D;
+  --red-bg: rgba(255,77,109,0.08);
+  --gold: #FFB547;
+  --gold-bg: rgba(255,181,71,0.08);
+  --blue: #4D9EFF;
+  --blue-bg: rgba(77,158,255,0.08);
+  --purple: #A78BFA;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --font: 'IBM Plex Sans Arabic', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+
+/* Layout */
+.layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.sidebar { background: var(--bg2); border-left: 1px solid var(--border); padding: 24px 0; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.main { padding: 28px 32px; overflow-x: hidden; }
+
+/* Sidebar */
+.logo-wrap { padding: 0 20px 24px; border-bottom: 1px solid var(--border); }
+.logo-ar { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+.logo-en { font-size: 11px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; font-family: var(--mono); }
+.logo-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; display: inline-block; margin-left: 6px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+.nav { padding: 16px 0; flex: 1; }
+.nav-label { font-size: 10px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; padding: 8px 20px 4px; font-family: var(--mono); }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; color: var(--text2); font-size: 14px; transition: all 0.15s; border-right: 3px solid transparent; }
+.nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.nav-item.active { color: var(--text); background: rgba(0,217,126,0.06); border-right-color: var(--green); }
+.nav-icon { width: 18px; text-align: center; font-size: 16px; }
+
+.sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
+.user-chip { display: flex; align-items: center; gap: 10px; }
+.user-avatar { width: 32px; height: 32px; background: linear-gradient(135deg, var(--green2), var(--blue)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0; }
+.user-name { font-size: 13px; font-weight: 500; }
+.user-role { font-size: 11px; color: var(--text3); }
+
+/* Header */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+.page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+.page-title span { color: var(--green); }
+.page-sub { font-size: 13px; color: var(--text3); margin-top: 4px; font-family: var(--mono); }
+.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* Buttons */
+.btn { padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--bg3); color: var(--text2); font-size: 13px; cursor: pointer; font-family: var(--font); transition: all 0.15s; }
+.btn:hover { border-color: var(--border2); color: var(--text); background: var(--bg4); }
+.btn-primary { background: var(--green); color: #000; border-color: var(--green); font-weight: 600; }
+.btn-primary:hover { background: var(--green2); border-color: var(--green2); color: #000; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-ghost { background: transparent; border-color: transparent; }
+.btn-ghost:hover { background: var(--bg3); border-color: var(--border); }
+
+/* Date input */
+.date-display {
+  background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  color: var(--text); font-family: var(--mono); font-size: 13px; padding: 8px 12px;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-width: 130px;
+  position: relative;
+}
+.date-display input[type=date] {
+  position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;
+  padding: 0; margin: 0; border: none; background: none;
+}
+input[type=date], input[type=number], input[type=text] {
+  background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  color: var(--text); font-family: var(--font); font-size: 13px; padding: 8px 12px; outline: none;
+}
+input[type=date]:focus, input[type=number]:focus, input[type=text]:focus { border-color: var(--green); }
+input[type=number] { width: 100%; }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; background: var(--bg2); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 24px; border: 1px solid var(--border); width: fit-content; }
+.tab { padding: 7px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; color: var(--text2); border: none; background: none; font-family: var(--font); transition: all 0.15s; }
+.tab.active { background: var(--bg4); color: var(--text); font-weight: 500; }
+
+/* Metric Cards */
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.metric-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; position: relative; overflow: hidden; }
+.metric-card::after { content: ''; position: absolute; top: 0; right: 0; width: 60px; height: 60px; border-radius: 50%; opacity: 0.06; }
+.metric-card.green::after { background: var(--green); }
+.metric-card.red::after { background: var(--red); }
+.metric-card.gold::after { background: var(--gold); }
+.metric-card.blue::after { background: var(--blue); }
+.metric-card.purple::after { background: var(--purple); }
+.metric-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-family: var(--mono); }
+.metric-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; line-height: 1; margin-bottom: 6px; }
+.metric-value.green { color: var(--green); }
+.metric-value.gold { color: var(--gold); }
+.metric-value.red { color: var(--red); }
+.metric-value.blue { color: var(--blue); }
+.metric-sub { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 4px; }
+.badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; font-family: var(--mono); }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-gold { background: var(--gold-bg); color: var(--gold); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+
+/* Cards */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.card-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.card-title .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.card-sub { font-size: 12px; color: var(--text3); font-family: var(--mono); }
+
+/* Grid layouts */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.full { margin-bottom: 16px; }
+
+/* App input grid */
+.app-input-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.app-input-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; transition: border-color 0.15s; }
+.app-input-card:focus-within { border-color: var(--green); }
+.app-input-name { font-size: 12px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.app-color { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.input-group { margin-bottom: 8px; }
+.input-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; letter-spacing: 0.5px; font-family: var(--mono); }
+.input-group:last-child { margin-bottom: 0; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: 1px; text-transform: uppercase; padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--border); font-weight: 400; }
+tbody td { padding: 12px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: rgba(255,255,255,0.02); }
+.total-row td { background: var(--bg3); font-weight: 600; border-top: 1px solid var(--border2); }
+
+/* Charts */
+.chart-wrap { position: relative; width: 100%; }
+
+/* App pills */
+.app-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.app-pill { padding: 4px 12px; border-radius: 99px; font-size: 12px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; color: var(--text2); }
+.app-pill.active { color: #000; font-weight: 600; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--green); color: #000; padding: 10px 20px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; transition: transform 0.3s ease; z-index: 999; pointer-events: none; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text3); }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-text { font-size: 14px; }
+
+/* Page sections */
+.page-section { display: none; }
+.page-section.active { display: block; }
+
+/* Delete btn */
+.del-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px; padding: 4px 8px; border-radius: 4px; transition: all 0.15s; }
+.del-btn:hover { color: var(--red); background: var(--red-bg); }
+
+/* Trend chip */
+.trend { font-size: 12px; font-family: var(--mono); }
+.trend.up { color: var(--green); }
+.trend.down { color: var(--red); }
+
+/* App legend */
+.legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+/* Rank table */
+.rank-num { font-family: var(--mono); font-size: 12px; color: var(--text3); }
+.rank-1 { color: var(--gold); font-weight: 700; }
+.rank-2 { color: #C0C0C0; font-weight: 600; }
+.rank-3 { color: #CD7F32; font-weight: 600; }
+
+/* Divider */
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .two-col, .three-col { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo-wrap">
+      <div class="logo-ar"><span class="logo-dot"></span>الناضج</div>
+      <div class="logo-en">Al Nadeg · Analytics</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">لوحة التحكم</div>
+      <div class="nav-item active" onclick="showPage(&#39;overview&#39;)">
+        <span class="nav-icon">📊</span> نظرة عامة
+      </div>
+      <div class="nav-item" onclick="showPage(&#39;entry&#39;)">
+        <span class="nav-icon">✏️</span> إدخال البيانات
+      </div>
+      <div class="nav-item" onclick="showPage(&#39;apps&#39;)">
+        <span class="nav-icon">📱</span> التطبيقات
+      </div>
+      <div class="nav-item" onclick="showPage(&#39;history&#39;)">
+        <span class="nav-icon">📅</span> السجل التاريخي
+      </div>
+      <div class="divider" style="margin:8px 20px;"></div>
+      <div class="nav-label">الإعدادات</div>
+      <div class="nav-item" onclick="showPage(&#39;settings&#39;)">
+        <span class="nav-icon">⚙️</span> إعدادات العمولات
+      </div>
+      <div class="nav-item" onclick="showPage(&#39;invoice&#39;)">
+        <span class="nav-icon">🧾</span> تسوية الفاتورة
+      </div>
+      <div class="nav-item" onclick="exportData()">
+        <span class="nav-icon">💾</span> تصدير البيانات
+      </div>
+      <div class="nav-item" onclick="clearAll()">
+        <span class="nav-icon">🗑️</span> مسح الكل
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar">MA</div>
+        <div>
+          <div class="user-name">Mohamed Adel</div>
+          <div class="user-role">Data Analysis Manager</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- OVERVIEW PAGE -->
+    <div class="page-section active" id="page-overview">
+      <div class="page-header">
+        <div>
+          <div class="page-title">نظرة عامة <span>/ Overview</span></div>
+          <div class="page-sub" id="overview-date">2026-06-02</div>
+        </div>
+        <div class="header-actions" style="position: relative;">
+          <input type="date" id="filter-date" onchange="renderOverview()" title="02/06/2026" style="color: transparent;"><span class="date-fmt-lbl" style="position: absolute; top: 50%; left: 12px; transform: translateY(-50%); font-size: 13px; color: var(--text); font-family: var(--mono); pointer-events: none; background: var(--bg3); padding: 0px 4px;">02/06/2026</span>
+          <button class="btn btn-primary" onclick="showPage(&#39;entry&#39;)">+ إدخال جديد</button>
+        </div>
+      </div>
+
+      <div class="metrics-grid" id="overview-metrics">
+    <div class="metric-card green">
+      <div class="metric-label">إجمالي المبيعات / Sales</div>
+      <div class="metric-value green">206,576</div>
+      <div class="metric-sub"><span class="badge badge-red">↓ 7.7%</span> ر.س</div>
+    </div>
+    <div class="metric-card blue">
+      <div class="metric-label">الصافي التقديري / Net</div>
+      <div class="metric-value blue">146,781</div>
+      <div class="metric-sub">ر.س بعد العمولة</div>
+    </div>
+    <div class="metric-card gold">
+      <div class="metric-label">إجمالي الأوردرات</div>
+      <div class="metric-value gold">2,593</div>
+      <div class="metric-sub">متوسط 80 ر.س/أوردر</div>
+    </div>
+    <div class="metric-card red">
+      <div class="metric-label">التعويضات / Comp.</div>
+      <div class="metric-value red">1,343</div>
+      <div class="metric-sub"><span class="badge badge-green">✓ ضمن الحد</span></div>
+    </div>
+    <div class="metric-card red">
+      <div class="metric-label">الملغية / المبيعات المفقودة</div>
+      <div class="metric-value red">4</div>
+      <div class="metric-sub">252 ر.س | 0.2% إلغاء</div>
+    </div>
+    <div class="metric-card gold">
+      <div class="metric-label">أعلى تطبيق / Top App</div>
+      <div class="metric-value" style="font-size:16px;color:var(--gold)">Keeta</div>
+      <div class="metric-sub">102,984 ر.س</div>
+    </div>
+  </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="dot" style="background:var(--green)"></span>مبيعات التطبيقات</div>
+            <div class="card-sub" id="chart1-label">2026-06-02</div>
+          </div>
+          <div class="legend" id="sales-legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#00D97E"></span>HungerStation</div>
+  
+    <div class="legend-item"><span class="legend-dot" style="background:#4D9EFF"></span>Keeta</div>
+  
+    <div class="legend-item"><span class="legend-dot" style="background:#FFB547"></span>Jahez</div>
+  
+    <div class="legend-item"><span class="legend-dot" style="background:#FF4D6D"></span>Ninja</div>
+  
+    <div class="legend-item"><span class="legend-dot" style="background:#A78BFA"></span>Marsol</div>
+  
+    <div class="legend-item"><span class="legend-dot" style="background:#34D399"></span>The Chefs</div>
+  
+    <div class="legend-item"><span class="legend-dot" style="background:#FB923C"></span>To You</div>
+  </div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="salesChart" role="img" aria-label="مبيعات التطبيقات" width="705" height="275" style="display: block; box-sizing: border-box; height: 220px; width: 564px;"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="dot" style="background:var(--red)"></span>التعويضات</div>
+            <div class="card-sub" id="chart2-label">2026-06-02</div>
+          </div>
+          <div class="chart-wrap" style="height:260px;"><canvas id="compChart" role="img" aria-label="التعويضات" width="705" height="325" style="display: block; box-sizing: border-box; height: 260px; width: 564px;"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card full">
+        <div class="card-header">
+          <div class="card-title"><span class="dot" style="background:var(--blue)"></span>تطور المبيعات اليومية / Daily Trend</div>
+        </div>
+        <div class="chart-wrap" style="height:200px;"><canvas id="trendChart" role="img" aria-label="تطور المبيعات" width="1483" height="250" style="display: block; box-sizing: border-box; height: 200px; width: 1186px;"></canvas></div>
+      </div>
+
+      <div class="card full">
+        <div class="card-header">
+          <div class="card-title"><span class="dot" style="background:var(--gold)"></span>ترتيب التطبيقات / App Rankings</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>#</th><th>التطبيق / App</th>
+              <th>المبيعات</th>
+              <th>الصافي</th>
+              <th>الأوردرات</th>
+              <th>التعويضات</th>
+              <th>نسبة التعويض</th>
+              <th>الملغية</th>
+              <th>المفقودة</th>
+              <th>الاتجاه</th>
+            </tr></thead>
+            <tbody id="rank-table-body"><tr>
+      <td><span class="rank-num rank-1">🥇</span></td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#4D9EFF;display:inline-block;"></span>Keeta</span></td>
+      <td><strong>102,984</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td style="color:var(--blue)"><strong>67,970</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td>1,206</td>
+      <td>479 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="badge badge-green">0.5%</span></td>
+      <td>0</td>
+      <td>0 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="trend down">↓ 4.6%</span></td>
+    </tr><tr>
+      <td><span class="rank-num rank-2">🥈</span></td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#00D97E;display:inline-block;"></span>HungerStation</span></td>
+      <td><strong>77,399</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td style="color:var(--blue)"><strong>58,049</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td>1,085</td>
+      <td>495 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="badge badge-green">0.6%</span></td>
+      <td>0</td>
+      <td>0 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="trend down">↓ 10.9%</span></td>
+    </tr><tr>
+      <td><span class="rank-num rank-3">🥉</span></td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#FFB547;display:inline-block;"></span>Jahez</span></td>
+      <td><strong>14,984</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td style="color:var(--blue)"><strong>11,987</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td>157</td>
+      <td>251 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="badge badge-gold">1.7%</span></td>
+      <td>2</td>
+      <td>140 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="trend down">↓ 3.9%</span></td>
+    </tr><tr>
+      <td><span class="rank-num rank-4">4</span></td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#FF4D6D;display:inline-block;"></span>Ninja</span></td>
+      <td><strong>5,293</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td style="color:var(--blue)"><strong>3,705</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td>77</td>
+      <td>50 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="badge badge-green">0.9%</span></td>
+      <td>1</td>
+      <td>44 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="trend down">↓ 35.8%</span></td>
+    </tr><tr>
+      <td><span class="rank-num rank-5">5</span></td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#34D399;display:inline-block;"></span>The Chefs</span></td>
+      <td><strong>3,157</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td style="color:var(--blue)"><strong>2,746</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td>32</td>
+      <td>68 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="badge badge-gold">2.2%</span></td>
+      <td>1</td>
+      <td>68 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="trend down">↓ 1.2%</span></td>
+    </tr><tr>
+      <td><span class="rank-num rank-6">6</span></td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#FB923C;display:inline-block;"></span>To You</span></td>
+      <td><strong>2,329</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td style="color:var(--blue)"><strong>1,979</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td>30</td>
+      <td>0 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="badge badge-green">0.0%</span></td>
+      <td>0</td>
+      <td>0 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="trend up">↑ 50.9%</span></td>
+    </tr><tr>
+      <td><span class="rank-num rank-7">7</span></td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#A78BFA;display:inline-block;"></span>Marsol</span></td>
+      <td><strong>431</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td style="color:var(--blue)"><strong>345</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td>6</td>
+      <td>0 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="badge badge-green">0.0%</span></td>
+      <td>0</td>
+      <td>0 <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="trend up">↑ 37.9%</span></td>
+    </tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY PAGE -->
+    <div class="page-section" id="page-entry">
+      <div class="page-header">
+        <div>
+          <div class="page-title">إدخال البيانات <span>/ Data Entry</span></div>
+          <div class="page-sub">أدخل مبيعات وتعويضات كل تطبيق يومياً</div>
+        </div>
+        <div class="header-actions" style="position: relative;">
+          <input type="date" id="entry-date" title="09/06/2026" style="color: transparent;"><span class="date-fmt-lbl" style="position: absolute; top: 50%; left: 12px; transform: translateY(-50%); font-size: 13px; color: var(--text); font-family: var(--mono); pointer-events: none; background: var(--bg3); padding: 0px 4px;">09/06/2026</span>
+          <button class="btn" onclick="clearEntryInputs()">مسح</button>
+          <button class="btn btn-primary" onclick="saveEntry()">💾 حفظ</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="dot" style="background:var(--green)"></span>بيانات التطبيقات</div>
+          <div class="card-sub">Sales &amp; Compensation per App</div>
+        </div>
+        <div class="app-input-grid" id="app-inputs">
+      <div class="app-input-card">
+        <div class="app-input-name">
+          <span class="app-color" style="background:#00D97E"></span>
+          HungerStation
+        </div>
+        <div class="input-group">
+          <div class="input-label">📦 عدد الأوردرات</div>
+          <input type="number" id="o_0" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">💰 المبيعات (ر.س)</div>
+          <input type="number" id="s_0" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">🔄 التعويضات (ر.س)</div>
+          <input type="number" id="c_0" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">❌ الطلبات الملغية (عدد)</div>
+          <input type="number" id="can_0" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">📉 المبيعات المفقودة (ر.س)</div>
+          <input type="number" id="lost_0" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:var(--mono);">عمولة: 25% · صافي: 75%</div>
+      </div>
+      <div class="app-input-card">
+        <div class="app-input-name">
+          <span class="app-color" style="background:#4D9EFF"></span>
+          Keeta
+        </div>
+        <div class="input-group">
+          <div class="input-label">📦 عدد الأوردرات</div>
+          <input type="number" id="o_1" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">💰 المبيعات (ر.س)</div>
+          <input type="number" id="s_1" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">🔄 التعويضات (ر.س)</div>
+          <input type="number" id="c_1" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">❌ الطلبات الملغية (عدد)</div>
+          <input type="number" id="can_1" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">📉 المبيعات المفقودة (ر.س)</div>
+          <input type="number" id="lost_1" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:var(--mono);">عمولة: 34% · صافي: 66%</div>
+      </div>
+      <div class="app-input-card">
+        <div class="app-input-name">
+          <span class="app-color" style="background:#FFB547"></span>
+          Jahez
+        </div>
+        <div class="input-group">
+          <div class="input-label">📦 عدد الأوردرات</div>
+          <input type="number" id="o_2" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">💰 المبيعات (ر.س)</div>
+          <input type="number" id="s_2" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">🔄 التعويضات (ر.س)</div>
+          <input type="number" id="c_2" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">❌ الطلبات الملغية (عدد)</div>
+          <input type="number" id="can_2" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">📉 المبيعات المفقودة (ر.س)</div>
+          <input type="number" id="lost_2" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:var(--mono);">عمولة: 20% · صافي: 80%</div>
+      </div>
+      <div class="app-input-card">
+        <div class="app-input-name">
+          <span class="app-color" style="background:#FF4D6D"></span>
+          Ninja
+        </div>
+        <div class="input-group">
+          <div class="input-label">📦 عدد الأوردرات</div>
+          <input type="number" id="o_3" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">💰 المبيعات (ر.س)</div>
+          <input type="number" id="s_3" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">🔄 التعويضات (ر.س)</div>
+          <input type="number" id="c_3" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">❌ الطلبات الملغية (عدد)</div>
+          <input type="number" id="can_3" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">📉 المبيعات المفقودة (ر.س)</div>
+          <input type="number" id="lost_3" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:var(--mono);">عمولة: 30% · صافي: 70%</div>
+      </div>
+      <div class="app-input-card">
+        <div class="app-input-name">
+          <span class="app-color" style="background:#A78BFA"></span>
+          Marsol
+        </div>
+        <div class="input-group">
+          <div class="input-label">📦 عدد الأوردرات</div>
+          <input type="number" id="o_4" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">💰 المبيعات (ر.س)</div>
+          <input type="number" id="s_4" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">🔄 التعويضات (ر.س)</div>
+          <input type="number" id="c_4" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">❌ الطلبات الملغية (عدد)</div>
+          <input type="number" id="can_4" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">📉 المبيعات المفقودة (ر.س)</div>
+          <input type="number" id="lost_4" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:var(--mono);">عمولة: 20% · صافي: 80%</div>
+      </div>
+      <div class="app-input-card">
+        <div class="app-input-name">
+          <span class="app-color" style="background:#34D399"></span>
+          The Chefs
+        </div>
+        <div class="input-group">
+          <div class="input-label">📦 عدد الأوردرات</div>
+          <input type="number" id="o_5" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">💰 المبيعات (ر.س)</div>
+          <input type="number" id="s_5" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">🔄 التعويضات (ر.س)</div>
+          <input type="number" id="c_5" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">❌ الطلبات الملغية (عدد)</div>
+          <input type="number" id="can_5" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">📉 المبيعات المفقودة (ر.س)</div>
+          <input type="number" id="lost_5" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:var(--mono);">عمولة: 13% · صافي: 87%</div>
+      </div>
+      <div class="app-input-card">
+        <div class="app-input-name">
+          <span class="app-color" style="background:#FB923C"></span>
+          To You
+        </div>
+        <div class="input-group">
+          <div class="input-label">📦 عدد الأوردرات</div>
+          <input type="number" id="o_6" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">💰 المبيعات (ر.س)</div>
+          <input type="number" id="s_6" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">🔄 التعويضات (ر.س)</div>
+          <input type="number" id="c_6" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">❌ الطلبات الملغية (عدد)</div>
+          <input type="number" id="can_6" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">📉 المبيعات المفقودة (ر.س)</div>
+          <input type="number" id="lost_6" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:var(--mono);">عمولة: 15% · صافي: 85%</div>
+      </div></div>
+      </div>
+
+      <div id="entry-summary" style="margin-top:16px;display:none;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="dot" style="background:var(--blue)"></span>ملخص الإدخال</div>
+          </div>
+          <div class="metrics-grid" id="entry-metrics"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPS PAGE -->
+    <div class="page-section" id="page-apps">
+      <div class="page-header">
+        <div>
+          <div class="page-title">تحليل التطبيقات <span>/ App Analysis</span></div>
+          <div class="page-sub">مقارنة أداء التطبيقات عبر الفترة الزمنية</div>
+        </div>
+        <div class="header-actions" style="position: relative;">
+          <input type="date" id="apps-from" placeholder="من" title="10/05/2026" style="color: transparent;"><span class="date-fmt-lbl" style="position: absolute; top: 50%; left: 12px; transform: translateY(-50%); font-size: 13px; color: var(--text); font-family: var(--mono); pointer-events: none; background: var(--bg3); padding: 0px 4px;">09/06/2026</span>
+          <input type="date" id="apps-to" placeholder="إلى" title="09/06/2026">
+          <button class="btn btn-primary" onclick="renderAppsPage()">تطبيق</button>
+        </div>
+      </div>
+
+      <div class="card full" style="margin-bottom:16px;">
+        <div class="card-header">
+          <div class="card-title"><span class="dot" style="background:var(--purple)"></span>مقارنة إجمالي المبيعات / Total Sales Comparison</div>
+        </div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="appsBarChart" role="img" aria-label="مقارنة التطبيقات"></canvas></div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="dot" style="background:var(--gold)"></span>حصة السوق / Market Share</div>
+          </div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="pieChart" role="img" aria-label="حصة السوق"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="dot" style="background:var(--red)"></span>نسب التعويضات / Compensation Rates</div>
+          </div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="compRateChart" role="img" aria-label="نسب التعويضات"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card full">
+        <div class="card-header">
+          <div class="card-title"><span class="dot" style="background:var(--blue)"></span>جدول التفاصيل / Detail Table</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>التطبيق</th><th>إجمالي المبيعات</th><th>إجمالي التعويضات</th>
+              <th>نسبة التعويض</th><th>متوسط يومي</th><th>أعلى يوم</th>
+            </tr></thead>
+            <tbody id="apps-detail-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div class="page-section" id="page-history">
+      <div class="page-header">
+        <div>
+          <div class="page-title">السجل التاريخي <span>/ History</span></div>
+          <div class="page-sub">جميع البيانات المدخلة</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn" onclick="exportData()">📥 تصدير CSV</button>
+        </div>
+      </div>
+
+      <div class="card full">
+        <div class="table-wrap">
+          <table>
+            <thead><tr id="hist-thead"></tr></thead>
+            <tbody id="hist-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- SETTINGS PAGE -->
+    <div class="page-section" id="page-settings">
+      <div class="page-header">
+        <div>
+          <div class="page-title">إعدادات العمولات <span>/ Commission Settings</span></div>
+          <div class="page-sub">حدد نسبة عمولة كل تطبيق للشهر الحالي</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="saveCommissionSettings()">💾 حفظ</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="dot" style="background:var(--gold)"></span>نسب العمولات الشهرية</div>
+          <div class="card-sub">تُحدَّث في أول كل شهر بناءً على الاتفاقية الفعلية مع كل تطبيق</div>
+        </div>
+        <div class="app-input-grid" id="commission-inputs"></div>
+        <div style="margin-top:16px;padding:12px 16px;background:var(--gold-bg);border-radius:var(--radius-sm);border:1px solid rgba(255,181,71,0.2);">
+          <div style="font-size:12px;color:var(--gold);font-weight:600;">ملاحظة</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px;">النسب دي بتُستخدم لحساب الصافي اليومي التقريبي. آخر الشهر قارنها بالفاتورة الفعلية في صفحة تسوية الفاتورة.</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+          <div class="card-title"><span class="dot" style="background:var(--red)"></span>حد تنبيه التعويضات</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div>
+            <div class="input-label" style="margin-bottom:6px;">الحد الأقصى لنسبة التعويض (%)</div>
+            <input type="number" id="comp-threshold" placeholder="3" min="0" max="100" step="0.1" style="width:160px;">
+          </div>
+          <button class="btn btn-primary" onclick="saveThreshold()">حفظ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVOICE PAGE -->
+    <div class="page-section" id="page-invoice">
+      <div class="page-header">
+        <div>
+          <div class="page-title">تسوية الفاتورة <span>/ Invoice Reconciliation</span></div>
+          <div class="page-sub">أدخل الصافي الفعلي من فاتورة كل تطبيق آخر الشهر</div>
+        </div>
+        <div class="header-actions">
+          <select id="invoice-month" style="font-size:13px;padding:7px 12px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg3);color:var(--text);" onchange="renderInvoicePage()"></select>
+          <button class="btn btn-primary" onclick="saveInvoice()">💾 حفظ التسوية</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="dot" style="background:var(--blue)"></span>الصافي الفعلي من الفاتورة — Net Due Invoice</div>
+        </div>
+        <div class="app-input-grid" id="invoice-inputs"></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+          <div class="card-title"><span class="dot" style="background:var(--green)"></span>مقارنة التقديري بالفعلي / Estimated vs Actual</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>التطبيق</th><th>المبيعات (شهري)</th><th>الصافي التقديري</th>
+              <th>الصافي الفعلي</th><th>الفرق</th><th>العمولة الفعلية</th>
+            </tr></thead>
+            <tbody id="reconciliation-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const APPS = ['هنجرستيشن','كيتا','جاهز','نينجا','مرسول','ذا شيفز','تو يو'];
+const APP_EN = ['HungerStation','Keeta','Jahez','Ninja','Marsol','The Chefs','To You'];
+const APP_COLORS = ['#00D97E','#4D9EFF','#FFB547','#FF4D6D','#A78BFA','#34D399','#FB923C'];
+
+const fmt = n => Number(n||0).toLocaleString('en-US', {minimumFractionDigits:0,maximumFractionDigits:0});
+const fmtD = n => Number(n||0).toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtP = n => (Number(n)||0).toFixed(1)+'%';
+
+let charts = {};
+
+function getEntries() {
+  try { return JSON.parse(localStorage.getItem('nadeg_v2_entries') || '[]'); } catch(e) { return []; }
+}
+function saveEntries(arr) {
+  localStorage.setItem('nadeg_v2_entries', JSON.stringify(arr));
+}
+function getToday() { return new Date().toISOString().split('T')[0]; }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const navItems = document.querySelectorAll('.nav-item');
+  const pages = ['overview','entry','apps','history','','settings','invoice'];
+  const idx = pages.indexOf(name);
+  if (idx >= 0 && navItems[idx]) navItems[idx].classList.add('active');
+  if (name==='overview') renderOverview();
+  if (name==='apps') renderAppsPage();
+  if (name==='history') renderHistory();
+  if (name==='settings') renderSettings();
+  if (name==='invoice') renderInvoicePage();
+}
+
+// ── ENTRY PAGE ──────────────────────────────────────────────────────────────
+function buildInputs() {
+  const c = document.getElementById('app-inputs');
+  c.innerHTML = '';
+  const comms = getCommissions();
+  APPS.forEach((app, i) => {
+    const rate = (comms[app]||DEFAULT_COMM[app]||0.20)*100;
+    c.innerHTML += `
+      <div class="app-input-card">
+        <div class="app-input-name">
+          <span class="app-color" style="background:${APP_COLORS[i]}"></span>
+          ${APP_EN[i]}
+        </div>
+        <div class="input-group">
+          <div class="input-label">📦 عدد الأوردرات</div>
+          <input type="number" id="o_${i}" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">💰 المبيعات (ر.س)</div>
+          <input type="number" id="s_${i}" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">🔄 التعويضات (ر.س)</div>
+          <input type="number" id="c_${i}" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">❌ الطلبات الملغية (عدد)</div>
+          <input type="number" id="can_${i}" placeholder="0" min="0" step="1" oninput="updateEntrySummary()">
+        </div>
+        <div class="input-group">
+          <div class="input-label">📉 المبيعات المفقودة (ر.س)</div>
+          <input type="number" id="lost_${i}" placeholder="0.00" min="0" step="0.01" oninput="updateEntrySummary()">
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:var(--mono);">عمولة: ${rate.toFixed(0)}% · صافي: ${(100-rate).toFixed(0)}%</div>
+      </div>`;
+  });
+  document.getElementById('entry-date').value = getToday();
+}
+
+function updateEntrySummary() {
+  let ts=0, tc=0, tnet=0, to=0, tcan=0, tlost=0;
+  APPS.forEach((app,i) => {
+    const s    = parseFloat(document.getElementById('s_'+i).value)||0;
+    const c    = parseFloat(document.getElementById('c_'+i).value)||0;
+    const o    = parseInt(document.getElementById('o_'+i).value)||0;
+    const can  = parseInt(document.getElementById('can_'+i).value)||0;
+    const lost = parseFloat(document.getElementById('lost_'+i).value)||0;
+    ts+=s; tc+=c; tnet+=getAppNet(app,s); to+=o; tcan+=can; tlost+=lost;
+  });
+  if (ts > 0 || to > 0) {
+    document.getElementById('entry-summary').style.display = 'block';
+    const thresh = getThreshold();
+    const compRate = ts>0?tc/ts*100:0;
+    const cancelRate = to>0?tcan/to*100:0;
+    const avgOrder = to>0?ts/to:0;
+    const alert = compRate>thresh ? '<span class="badge badge-red">⚠️ تجاوز '+thresh+'%</span>' : '<span class="badge badge-green">✓ ضمن الحد</span>';
+    document.getElementById('entry-metrics').innerHTML =
+      '<div class="metric-card green"><div class="metric-label">إجمالي المبيعات</div><div class="metric-value green">'+fmt(ts)+'</div><div class="metric-sub">ر.س</div></div>'
+      +'<div class="metric-card blue"><div class="metric-label">الصافي التقديري</div><div class="metric-value blue">'+fmt(tnet)+'</div><div class="metric-sub">ر.س بعد العمولة</div></div>'
+      +'<div class="metric-card gold"><div class="metric-label">إجمالي الأوردرات</div><div class="metric-value gold">'+fmt(to)+'</div><div class="metric-sub">متوسط: '+fmt(avgOrder)+' ر.س</div></div>'
+      +'<div class="metric-card red"><div class="metric-label">التعويضات</div><div class="metric-value red">'+fmt(tc)+'</div><div class="metric-sub">'+alert+'</div></div>'
+      +'<div class="metric-card red"><div class="metric-label">الملغية / المفقودة</div><div class="metric-value red">'+tcan+'</div><div class="metric-sub">'+fmt(tlost)+' ر.س مفقودة</div></div>'
+      +'<div class="metric-card purple"><div class="metric-label">نسبة الإلغاء</div><div class="metric-value" style="color:var(--purple)">'+cancelRate.toFixed(1)+'%</div><div class="metric-sub">من الأوردرات</div></div>';
+  }
+}
+
+function clearEntryInputs() {
+  APPS.forEach((_,i) => {
+    document.getElementById('s_'+i).value='';
+    document.getElementById('c_'+i).value='';
+    document.getElementById('o_'+i).value='';
+    document.getElementById('can_'+i).value='';
+    document.getElementById('lost_'+i).value='';
+  });
+  document.getElementById('entry-summary').style.display = 'none';
+}
+
+function saveEntry() {
+  const date = document.getElementById('entry-date').value;
+  if (!date) { showToast('اختر التاريخ أولاً!'); return; }
+  const entry = { date, apps: {} };
+  const comms = getCommissions();
+  APPS.forEach((app,i) => {
+    const s = parseFloat(document.getElementById('s_'+i).value)||0;
+    const rate = comms[app]||DEFAULT_COMM[app]||0.20;
+    entry.apps[app] = {
+      sales:   s,
+      comp:    parseFloat(document.getElementById('c_'+i).value)||0,
+      orders:  parseInt(document.getElementById('o_'+i).value)||0,
+      cancel:  parseInt(document.getElementById('can_'+i).value)||0,
+      lost:    parseFloat(document.getElementById('lost_'+i).value)||0,
+      net:     s * (1 - rate),
+    };
+  });
+  const entries = getEntries().filter(e => e.date !== date);
+  entries.push(entry);
+  entries.sort((a,b) => a.date.localeCompare(b.date));
+  saveEntries(entries);
+  showToast('✓ تم الحفظ — ' + date);
+}
+
+// ── OVERVIEW PAGE ────────────────────────────────────────────────────────────
+function renderOverview() {
+  const entries = getEntries();
+  // Always get value as YYYY-MM-DD from the date input
+  let dateFilter = document.getElementById('filter-date').value;
+  // date input always returns YYYY-MM-DD, no conversion needed
+  const target = dateFilter || (entries.length ? entries[entries.length-1].date : null);
+
+  document.getElementById('overview-date').textContent = target || 'لا توجد بيانات';
+  document.getElementById('filter-date').value = target || getToday();
+
+  if (!entries.length) {
+    document.getElementById('overview-metrics').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📊</div><div class="empty-text">لا توجد بيانات — ابدأ بإدخال البيانات اليومية</div></div>';
+    return;
+  }
+
+  const last = entries.find(e => e.date === target) || entries[entries.length-1];
+  const prev = entries.length >= 2 ? entries[entries.indexOf(last)-1] : null;
+
+  let ts=0, tc=0, tnet=0, to=0, tcan=0, tlost=0, prevTs=0;
+  const thresh = getThreshold();
+  const comms = getCommissions();
+  APPS.forEach(app => {
+    const rate = comms[app]||DEFAULT_COMM[app]||0.20;
+    const s = last.apps[app]?.sales||0;
+    ts   += s;
+    tc   += last.apps[app]?.comp||0;
+    tnet += (last.apps[app]?.net)||(s*(1-rate));
+    to   += last.apps[app]?.orders||0;
+    tcan += last.apps[app]?.cancel||0;
+    tlost+= last.apps[app]?.lost||0;
+    if (prev) prevTs += prev.apps[app]?.sales||0;
+  });
+
+  const diff = prev && prevTs ? ((ts-prevTs)/prevTs*100).toFixed(1) : null;
+  const bestApp = APPS.reduce((a,b) => ((last.apps[b]?.sales||0) > (last.apps[a]?.sales||0)) ? b : a);
+  const compRate = ts>0?tc/ts*100:0;
+  const cancelRate = to>0?tcan/to*100:0;
+  const avgOrder = to>0?ts/to:0;
+  const compAlert = compRate>thresh ? `<span class="badge badge-red">⚠️ تجاوز ${thresh}%</span>` : `<span class="badge badge-green">✓ ضمن الحد</span>`;
+
+  document.getElementById('overview-metrics').innerHTML = `
+    <div class="metric-card green">
+      <div class="metric-label">إجمالي المبيعات / Sales</div>
+      <div class="metric-value green">${fmt(ts)}</div>
+      <div class="metric-sub">${diff !== null ? `<span class="badge ${diff>=0?'badge-green':'badge-red'}">${diff>=0?'↑':'↓'} ${Math.abs(diff)}%</span>` : ''} ر.س</div>
+    </div>
+    <div class="metric-card blue">
+      <div class="metric-label">الصافي التقديري / Net</div>
+      <div class="metric-value blue">${fmt(tnet)}</div>
+      <div class="metric-sub">ر.س بعد العمولة</div>
+    </div>
+    <div class="metric-card gold">
+      <div class="metric-label">إجمالي الأوردرات</div>
+      <div class="metric-value gold">${fmt(to)}</div>
+      <div class="metric-sub">متوسط ${fmt(avgOrder)} ر.س/أوردر</div>
+    </div>
+    <div class="metric-card red">
+      <div class="metric-label">التعويضات / Comp.</div>
+      <div class="metric-value red">${fmt(tc)}</div>
+      <div class="metric-sub">${compAlert}</div>
+    </div>
+    <div class="metric-card red">
+      <div class="metric-label">الملغية / المبيعات المفقودة</div>
+      <div class="metric-value red">${tcan}</div>
+      <div class="metric-sub">${fmt(tlost)} ر.س | ${cancelRate.toFixed(1)}% إلغاء</div>
+    </div>
+    <div class="metric-card gold">
+      <div class="metric-label">أعلى تطبيق / Top App</div>
+      <div class="metric-value" style="font-size:16px;color:var(--gold)">${APP_EN[APPS.indexOf(bestApp)]||bestApp}</div>
+      <div class="metric-sub">${fmt(last.apps[bestApp]?.sales||0)} ر.س</div>
+    </div>
+  `;
+
+  const salesData = APPS.map(app => last.apps[app]?.sales||0);
+  const compData  = APPS.map(app => last.apps[app]?.comp||0);
+
+  document.getElementById('chart1-label').textContent = last.date;
+  document.getElementById('chart2-label').textContent = last.date;
+
+  // Sales legend
+  document.getElementById('sales-legend').innerHTML = APP_EN.map((a,i) => `
+    <div class="legend-item"><span class="legend-dot" style="background:${APP_COLORS[i]}"></span>${a}</div>
+  `).join('');
+
+  destroyChart('salesChart');
+  charts.salesChart = new Chart(document.getElementById('salesChart'), {
+    type: 'bar',
+    data: { labels: APP_EN, datasets: [{ data: salesData, backgroundColor: APP_COLORS, borderRadius: 6, borderSkipped: false }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#5A6480',font:{size:11}},grid:{display:false}}, y:{ticks:{color:'#5A6480',callback:v=>fmt(v),font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}} } }
+  });
+
+  destroyChart('compChart');
+  charts.compChart = new Chart(document.getElementById('compChart'), {
+    type: 'doughnut',
+    data: { labels: APP_EN, datasets: [{ data: compData, backgroundColor: APP_COLORS, borderWidth: 0, hoverOffset: 8 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      cutout: '65%' }
+  });
+
+  // Trend
+  const tLabels = entries.slice(-14).map(e => e.date.slice(5));
+  const tData   = entries.slice(-14).map(e => APPS.reduce((a,app) => a+(e.apps[app]?.sales||0), 0));
+  destroyChart('trendChart');
+  charts.trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: { labels: tLabels, datasets: [{ data: tData, borderColor: APP_COLORS[0], backgroundColor: 'rgba(0,217,126,0.05)', fill:true, tension:0.4, pointRadius:3, pointBackgroundColor: APP_COLORS[0] }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#5A6480',font:{size:10}},grid:{display:false}}, y:{ticks:{color:'#5A6480',callback:v=>fmt(v),font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}} } }
+  });
+
+  // Rankings
+  const ranked = APPS.map((app,i) => {
+    const s = last.apps[app]?.sales||0;
+    const rate = comms[app]||DEFAULT_COMM[app]||0.20;
+    return {
+      app, color: APP_COLORS[i],
+      sales:  s,
+      comp:   last.apps[app]?.comp||0,
+      net:    (last.apps[app]?.net)||(s*(1-rate)),
+      orders: last.apps[app]?.orders||0,
+      cancel: last.apps[app]?.cancel||0,
+      lost:   last.apps[app]?.lost||0,
+    };
+  }).sort((a,b) => b.sales-a.sales);
+
+  document.getElementById('rank-table-body').innerHTML = ranked.map((r,i) => {
+    const rate = r.sales ? (r.comp/r.sales*100) : 0;
+    let trendHtml = '—';
+    if (entries.length >= 2) {
+      const cur = entries[entries.length-1].apps[r.app]?.sales||0;
+      const prv = entries[entries.length-2].apps[r.app]?.sales||0;
+      const td = prv ? ((cur-prv)/prv*100).toFixed(1) : null;
+      if (td !== null) trendHtml = `<span class="trend ${td>=0?'up':'down'}">${td>=0?'↑':'↓'} ${Math.abs(td)}%</span>`;
+    }
+    return `<tr>
+      <td><span class="rank-num rank-${i+1}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span></td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:${r.color};display:inline-block;"></span>${APP_EN[APPS.indexOf(r.app)]||r.app}</span></td>
+      <td><strong>${fmt(r.sales)}</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td style="color:var(--blue)"><strong>${fmt(r.net)}</strong> <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td>${fmt(r.orders)}</td>
+      <td>${fmt(r.comp)} <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td><span class="badge ${rate>thresh?'badge-red':rate>1?'badge-gold':'badge-green'}">${fmtP(rate)}</span></td>
+      <td>${r.cancel}</td>
+      <td>${fmt(r.lost)} <span style="font-size:11px;color:var(--text3);">ر.س</span></td>
+      <td>${trendHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── APPS PAGE ────────────────────────────────────────────────────────────────
+function renderAppsPage() {
+  const entries = getEntries();
+  const from = document.getElementById('apps-from').value;
+  const to   = document.getElementById('apps-to').value;
+  const filtered = entries.filter(e => (!from || e.date >= from) && (!to || e.date <= to));
+
+  if (!filtered.length) return;
+
+  const appTotals = APPS.map((app,i) => {
+    const s = filtered.reduce((a,e) => a+(e.apps[app]?.sales||0), 0);
+    const c = filtered.reduce((a,e) => a+(e.apps[app]?.comp||0), 0);
+    const maxDay = filtered.reduce((a,e) => Math.max(a, e.apps[app]?.sales||0), 0);
+    return { app, color: APP_COLORS[i], sales:s, comp:c, days:filtered.length, max:maxDay };
+  });
+
+  destroyChart('appsBarChart');
+  charts.appsBarChart = new Chart(document.getElementById('appsBarChart'), {
+    type: 'bar',
+    data: { labels: APP_EN, datasets: [
+      { label: 'المبيعات', data: appTotals.map(a=>a.sales), backgroundColor: APP_COLORS, borderRadius:6, borderSkipped:false },
+    ]},
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#5A6480',font:{size:11}},grid:{display:false}}, y:{ticks:{color:'#5A6480',callback:v=>fmt(v)},grid:{color:'rgba(255,255,255,0.04)'}} } }
+  });
+
+  destroyChart('pieChart');
+  const totalAll = appTotals.reduce((a,x)=>a+x.sales,0);
+  charts.pieChart = new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: { labels: APP_EN, datasets: [{ data: appTotals.map(a=>a.sales), backgroundColor: APP_COLORS, borderWidth:0, hoverOffset:8 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, cutout:'60%' }
+  });
+
+  destroyChart('compRateChart');
+  charts.compRateChart = new Chart(document.getElementById('compRateChart'), {
+    type: 'bar',
+    data: { labels: APP_EN, datasets: [{ data: appTotals.map(a=>a.sales?a.comp/a.sales*100:0), backgroundColor: APP_COLORS, borderRadius:6, borderSkipped:false }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#5A6480',font:{size:11}},grid:{display:false}}, y:{ticks:{color:'#5A6480',callback:v=>v.toFixed(1)+'%'},grid:{color:'rgba(255,255,255,0.04)'}} } }
+  });
+
+  document.getElementById('apps-detail-body').innerHTML = appTotals.sort((a,b)=>b.sales-a.sales).map((r,i) => {
+    const rate = r.sales ? (r.comp/r.sales*100) : 0;
+    const avg  = r.days  ? r.sales/r.days : 0;
+    return `<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:${r.color};display:inline-block;"></span>${APP_EN[APPS.indexOf(r.app)]||r.app}</span></td>
+      <td><strong>${fmt(r.sales)}</strong> ر.س</td>
+      <td>${fmt(r.comp)} ر.س</td>
+      <td><span class="badge ${rate>3?'badge-red':rate>1?'badge-gold':'badge-green'}">${fmtP(rate)}</span></td>
+      <td>${fmt(avg)} ر.س</td>
+      <td>${fmt(r.max)} ر.س</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── HISTORY PAGE ─────────────────────────────────────────────────────────────
+function renderHistory() {
+  const entries = getEntries();
+  const thead = document.getElementById('hist-thead');
+  const tbody = document.getElementById('hist-body');
+
+  if (!entries.length) {
+    thead.innerHTML = '';
+    tbody.innerHTML = '<tr><td colspan="100" class="empty-state" style="text-align:center;padding:48px;color:var(--text3);">لا توجد بيانات</td></tr>';
+    return;
+  }
+
+  thead.innerHTML = '<th>التاريخ</th>' +
+    APPS.map(a => `<th>${a}<br><span style="opacity:0.6;font-weight:400">م / ت</span></th>`).join('') +
+    '<th>الإجمالي</th><th></th>';
+
+  tbody.innerHTML = '';
+  [...entries].reverse().forEach(entry => {
+    let ts=0, tc=0;
+    const cells = APPS.map(app => {
+      const s = entry.apps[app]?.sales||0;
+      const c = entry.apps[app]?.comp||0;
+      ts+=s; tc+=c;
+      return `<td>${fmt(s)}<br><span style="font-size:11px;color:var(--red);">${c>0?fmt(c):''}</span></td>`;
+    }).join('');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><span class="badge badge-blue">${entry.date}</span></td>${cells}
+    <td><strong>${fmt(ts)}</strong><br><span style="font-size:11px;color:var(--red);">${tc>0?fmt(tc):''}</span></td>
+    <td style="display:flex;gap:4px;">
+      <button class="del-btn" title="تعديل التاريخ" onclick="editEntryDate('${entry.date}')">✏️</button>
+      <button class="del-btn" title="حذف" onclick="deleteEntry('${entry.date}')">🗑</button>
+    </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function editEntryDate(oldDate) {
+  const newDate = prompt('أدخل التاريخ الصح (YYYY-MM-DD):', oldDate);
+  if (!newDate || newDate === oldDate) return;
+  // Validate format
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+    showToast('⚠️ الشكل الصح: YYYY-MM-DD مثال: 2026-06-02');
+    return;
+  }
+  const entries = getEntries();
+  // Check if new date already exists
+  if (entries.find(e => e.date === newDate)) {
+    showToast('⚠️ يوجد إدخال بهذا التاريخ بالفعل!');
+    return;
+  }
+  const idx = entries.findIndex(e => e.date === oldDate);
+  if (idx === -1) return;
+  entries[idx].date = newDate;
+  entries.sort((a,b) => a.date.localeCompare(b.date));
+  saveEntries(entries);
+  renderHistory();
+  showToast('✓ تم تعديل التاريخ من ' + oldDate + ' إلى ' + newDate);
+}
+
+function deleteEntry(date) {
+  if (!confirm('حذف بيانات ' + date + '؟')) return;
+  saveEntries(getEntries().filter(e => e.date !== date));
+  renderHistory();
+  showToast('تم الحذف');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function exportData() {
+  const entries = getEntries();
+  if (!entries.length) { showToast('لا توجد بيانات للتصدير'); return; }
+  let csv = 'Date,' + APPS.map(a => a+'_Sales,'+a+'_Comp').join(',') + ',Total_Sales,Total_Comp\n';
+  entries.forEach(e => {
+    let ts=0,tc=0;
+    const row = [e.date, ...APPS.flatMap(app => {
+      const s=e.apps[app]?.sales||0, c=e.apps[app]?.comp||0;
+      ts+=s;tc+=c;return [s,c];
+    }), ts, tc];
+    csv += row.join(',') + '\n';
+  });
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'nadeg_data_' + getToday() + '.csv';
+  a.click();
+  showToast('تم التصدير');
+}
+
+function clearAll() {
+  if (confirm('هل تريد مسح جميع البيانات؟ لا يمكن التراجع.')) {
+    localStorage.removeItem('nadeg_v2_entries');
+    showToast('تم المسح');
+    renderOverview();
+  }
+}
+
+
+// ── COMMISSIONS & SETTINGS ────────────────────────────────────────────────────
+const DEFAULT_COMM = {'هنجرستيشن':0.25,'كيتا':0.34,'جاهز':0.20,'نينجا':0.30,'مرسول':0.20,'ذا شيفز':0.13,'تو يو':0.15};
+
+function getCommissions() {
+  try { return JSON.parse(localStorage.getItem('nadeg_comms')||'null') || DEFAULT_COMM; }
+  catch(e) { return DEFAULT_COMM; }
+}
+function getThreshold() { return parseFloat(localStorage.getItem('nadeg_thresh')||'3'); }
+function getMonthKey(date) { return date.slice(0,7); }
+function getInvoices() { try { return JSON.parse(localStorage.getItem('nadeg_invoices')||'{}'); } catch(e){return{};} }
+
+function renderSettings() {
+  const comms = getCommissions();
+  const c = document.getElementById('commission-inputs');
+  c.innerHTML = '';
+  APPS.forEach((app,i) => {
+    const rate = (comms[app]||DEFAULT_COMM[app]||0.20)*100;
+    c.innerHTML += '<div class="app-input-card">'
+      + '<div class="app-input-name"><span class="app-color" style="background:'+APP_COLORS[i]+'"></span>'+APP_EN[i]+'</div>'
+      + '<div class="input-group"><div class="input-label">نسبة العمولة الإجمالية %</div>'
+      + '<input type="number" id="comm_'+i+'" value="'+rate.toFixed(0)+'" min="0" max="100" step="1"></div>'
+      + '<div style="font-size:10px;color:var(--text3);margin-top:4px;">صافي متوقع: '+(100-rate).toFixed(0)+'%</div>'
+      + '</div>';
+  });
+  document.getElementById('comp-threshold').value = getThreshold();
+}
+
+function saveCommissionSettings() {
+  const comms = {};
+  APPS.forEach((app,i) => { comms[app] = (parseFloat(document.getElementById('comm_'+i).value)||0)/100; });
+  localStorage.setItem('nadeg_comms', JSON.stringify(comms));
+  showToast('✓ تم حفظ نسب العمولات');
+  buildInputs();
+}
+
+function saveThreshold() {
+  localStorage.setItem('nadeg_thresh', parseFloat(document.getElementById('comp-threshold').value)||3);
+  showToast('✓ تم حفظ حد التنبيه');
+}
+
+function getAppNet(app, sales) {
+  const comms = getCommissions();
+  const rate = comms[app]||DEFAULT_COMM[app]||0.20;
+  return sales * (1 - rate);
+}
+
+function renderInvoicePage() {
+  const entries = getEntries();
+  const months = [...new Set(entries.map(e=>getMonthKey(e.date)))].sort().reverse();
+  const sel = document.getElementById('invoice-month');
+  const cur = getMonthKey(getToday());
+  const opts = months.length ? months : [cur];
+  sel.innerHTML = opts.map(m=>'<option value="'+m+'">'+m+'</option>').join('');
+
+  const month = sel.value || cur;
+  const invoices = getInvoices();
+  const c = document.getElementById('invoice-inputs');
+  c.innerHTML = '';
+  APPS.forEach((app,i) => {
+    const saved = invoices[month]?.[app]||'';
+    c.innerHTML += '<div class="app-input-card">'
+      + '<div class="app-input-name"><span class="app-color" style="background:'+APP_COLORS[i]+'"></span>'+APP_EN[i]+'</div>'
+      + '<div class="input-group"><div class="input-label">الصافي الفعلي (ر.س)</div>'
+      + '<input type="number" id="inv_'+i+'" value="'+saved+'" placeholder="0.00" min="0" step="0.01" oninput="updateReconciliation()"></div>'
+      + '</div>';
+  });
+  updateReconciliation();
+}
+
+function saveInvoice() {
+  const month = document.getElementById('invoice-month').value;
+  const invoices = getInvoices();
+  invoices[month] = {};
+  APPS.forEach((app,i) => { invoices[month][app] = parseFloat(document.getElementById('inv_'+i).value)||0; });
+  localStorage.setItem('nadeg_invoices', JSON.stringify(invoices));
+  showToast('✓ تم حفظ تسوية '+month);
+}
+
+function updateReconciliation() {
+  const entries = getEntries();
+  const month = document.getElementById('invoice-month')?.value;
+  if (!month) return;
+  const monthEntries = entries.filter(e=>getMonthKey(e.date)===month);
+  const tbody = document.getElementById('reconciliation-body');
+  let rows='', totS=0, totE=0, totA=0;
+  APPS.forEach((app,i) => {
+    const sales = monthEntries.reduce((a,e)=>a+(e.apps[app]?.sales||0),0);
+    const estimated = getAppNet(app, sales);
+    const actual = parseFloat(document.getElementById('inv_'+i)?.value)||0;
+    const diff = actual - estimated;
+    const realComm = sales>0&&actual>0 ? ((sales-actual)/sales*100) : null;
+    totS+=sales; totE+=estimated; totA+=actual;
+    rows += '<tr>'
+      + '<td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:'+APP_COLORS[i]+';display:inline-block;"></span>'+app+'</span></td>'
+      + '<td>'+fmt(sales)+' ر.س</td>'
+      + '<td>'+fmt(estimated)+' ر.س</td>'
+      + '<td><strong style="color:var(--green)">'+(actual>0?fmt(actual)+' ر.س':'—')+'</strong></td>'
+      + '<td>'+(actual>0?'<span class="badge '+(diff>=0?'badge-green':'badge-red')+'">'+(diff>=0?'+':'')+fmt(diff)+' ر.س</span>':'—')+'</td>'
+      + '<td>'+(realComm!==null?'<span class="badge badge-gold">'+realComm.toFixed(1)+'%</span>':'—')+'</td>'
+      + '</tr>';
+  });
+  const td = totA - totE;
+  rows += '<tr class="total-row"><td>الإجمالي</td><td>'+fmt(totS)+' ر.س</td><td>'+fmt(totE)+' ر.س</td>'
+    + '<td><strong style="color:var(--green)">'+(totA>0?fmt(totA)+' ر.س':'—')+'</strong></td>'
+    + '<td>'+(totA>0?'<span class="badge '+(td>=0?'badge-green':'badge-red')+'">'+(td>=0?'+':'')+fmt(td)+' ر.س</span>':'—')+'</td>'
+    + '<td>'+(totS>0&&totA>0?'<span class="badge badge-gold">'+((totS-totA)/totS*100).toFixed(1)+'%</span>':'—')+'</td></tr>';
+  tbody.innerHTML = rows;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+buildInputs();
+
+// Set default date ranges FIRST before rendering
+const today = getToday();
+const thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];
+
+// Set filter-date to last entry date or today
+const _entries = getEntries();
+const _lastDate = _entries.length ? _entries[_entries.length-1].date : today;
+document.getElementById('filter-date').value = _lastDate;
+document.getElementById('apps-from').value = thirtyDaysAgo;
+document.getElementById('apps-to').value = today;
+
+renderOverview();
+
+// Format all date inputs to show DD/MM/YYYY visually
+function formatDateInputs() {
+  document.querySelectorAll('input[type=date]').forEach(function(inp) {
+    inp.addEventListener('change', function() {
+      updateDateLabel(inp);
+    });
+    updateDateLabel(inp);
+  });
+}
+
+function updateDateLabel(inp) {
+  if (!inp.value) return;
+  const parts = inp.value.split('-');
+  if (parts.length === 3) {
+    // Store formatted value as title for tooltip
+    inp.title = parts[2] + '/' + parts[1] + '/' + parts[0];
+    // Create a sibling label if not exists
+    let lbl = inp.parentElement.querySelector('.date-fmt-lbl');
+    if (!lbl) {
+      lbl = document.createElement('span');
+      lbl.className = 'date-fmt-lbl';
+      lbl.style.cssText = 'position:absolute;top:50%;left:12px;transform:translateY(-50%);font-size:13px;color:var(--text);font-family:var(--mono);pointer-events:none;background:var(--bg3);padding:0 4px;';
+      inp.style.cssText += ';color:transparent;';
+      inp.parentElement.style.position = 'relative';
+      inp.parentElement.insertBefore(lbl, inp.nextSibling);
+    }
+    lbl.textContent = parts[2] + '/' + parts[1] + '/' + parts[0];
+  }
+}
+formatDateInputs();
+</script>
+
+
+</body></html>
