@@ -287,7 +287,8 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
         <div class="header-actions">
           <span style="font-size:12px;color:var(--text3);">من</span>
           <div style="position:relative;display:inline-block;">
-            <input type="date" id="filter-from" onchange="renderOverview();showDateFmt(this,&#39;filter-from-lbl&#39;)" style="width: 140px; opacity: 0; position: absolute; top: 0px; left: 0px; height: 100%; cursor: pointer; color: var(--text);" title="01/06/2026">
+            <input type="date" id="filter-from" onchange="renderOverview();
+})(); // end async initshowDateFmt(this,&#39;filter-from-lbl&#39;)" style="width: 140px; opacity: 0; position: absolute; top: 0px; left: 0px; height: 100%; cursor: pointer; color: var(--text);" title="01/06/2026">
             <div id="filter-from-lbl" style="width:140px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);cursor:pointer;" onclick="document.getElementById(&#39;filter-from&#39;).showPicker&amp;&amp;document.getElementById(&#39;filter-from&#39;).showPicker()">01/06/2026</div>
           </div>
           <span style="font-size:12px;color:var(--text3);">إلى</span>
@@ -875,11 +876,51 @@ const fmtP = n => (Number(n)||0).toFixed(1)+'%';
 
 let charts = {};
 
+// ── FIREBASE SETUP ─────────────────────────────────────────────────────────────
+const FB_URL = 'https://alnadej-dashboard-default-rtdb.firebaseio.com';
+
+async function fbGet(path) {
+  try {
+    const r = await fetch(FB_URL + path + '.json');
+    return await r.json();
+  } catch(e) { return null; }
+}
+async function fbSet(path, data) {
+  try {
+    await fetch(FB_URL + path + '.json', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+  } catch(e) { console.error('Firebase write error', e); }
+}
+
+let _entriesCache = null;
+let _commsCache = null;
+let _threshCache = null;
+let _invoicesCache = null;
+
+async function loadAllData() {
+  const data = await fbGet('/nadeg');
+  if (data) {
+    _entriesCache = data.entries || [];
+    _commsCache = data.comms || null;
+    _threshCache = data.thresh || null;
+    _invoicesCache = data.invoices || {};
+  } else {
+    _entriesCache = [];
+    _commsCache = null;
+    _threshCache = null;
+    _invoicesCache = {};
+  }
+}
+
 function getEntries() {
-  try { return JSON.parse(localStorage.getItem('nadeg_v2_entries') || '[]'); } catch(e) { return []; }
+  return _entriesCache || [];
 }
 function saveEntries(arr) {
-  localStorage.setItem('nadeg_v2_entries', JSON.stringify(arr));
+  _entriesCache = arr;
+  fbSet('/nadeg/entries', arr);
 }
 function getToday() { return new Date().toISOString().split('T')[0]; }
 
@@ -1590,7 +1631,7 @@ function mergeAndSave(arr) {
 
 function clearAll() {
   if (confirm('هل تريد مسح جميع البيانات؟ لا يمكن التراجع.')) {
-    localStorage.removeItem('nadeg_v2_entries');
+    _entriesCache = []; fbSet('/nadeg/entries', []);
     showToast('تم المسح');
     renderOverview();
   }
@@ -1601,12 +1642,11 @@ function clearAll() {
 const DEFAULT_COMM = {'هنجرستيشن':0.25,'كيتا':0.34,'جاهز':0.20,'نينجا':0.30,'مرسول':0.20,'ذا شيفز':0.13,'تو يو':0.15};
 
 function getCommissions() {
-  try { return JSON.parse(localStorage.getItem('nadeg_comms')||'null') || DEFAULT_COMM; }
-  catch(e) { return DEFAULT_COMM; }
+  return _commsCache || DEFAULT_COMM;
 }
-function getThreshold() { return parseFloat(localStorage.getItem('nadeg_thresh')||'3'); }
+function getThreshold() { return parseFloat(_threshCache||'3'); }
 function getMonthKey(date) { return date.slice(0,7); }
-function getInvoices() { try { return JSON.parse(localStorage.getItem('nadeg_invoices')||'{}'); } catch(e){return{};} }
+function getInvoices() { return _invoicesCache || {}; }
 
 function renderSettings() {
   const comms = getCommissions();
@@ -1627,13 +1667,13 @@ function renderSettings() {
 function saveCommissionSettings() {
   const comms = {};
   APPS.forEach((app,i) => { comms[app] = (parseFloat(document.getElementById('comm_'+i).value)||0)/100; });
-  localStorage.setItem('nadeg_comms', JSON.stringify(comms));
+  _commsCache = comms; fbSet('/nadeg/comms', comms);
   showToast('✓ تم حفظ نسب العمولات');
   buildInputs();
 }
 
 function saveThreshold() {
-  localStorage.setItem('nadeg_thresh', parseFloat(document.getElementById('comp-threshold').value)||3);
+  _threshCache = String(parseFloat(document.getElementById('comp-threshold').value)||3); fbSet('/nadeg/thresh', _threshCache);
   showToast('✓ تم حفظ حد التنبيه');
 }
 
@@ -1671,7 +1711,7 @@ function saveInvoice() {
   const invoices = getInvoices();
   invoices[month] = {};
   APPS.forEach((app,i) => { invoices[month][app] = parseFloat(document.getElementById('inv_'+i).value)||0; });
-  localStorage.setItem('nadeg_invoices', JSON.stringify(invoices));
+  _invoicesCache = invoices; fbSet('/nadeg/invoices', invoices);
   showToast('✓ تم حفظ تسوية '+month);
 }
 
@@ -1707,7 +1747,10 @@ function updateReconciliation() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-buildInputs();
+// Load Firebase data first, then init
+(async () => {
+  await loadAllData();
+  buildInputs();
 
 // Set default date ranges FIRST before rendering
 const today = getToday();
