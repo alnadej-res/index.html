@@ -166,6 +166,19 @@
    ════════════════════════════════════════════ */
 
 /* ── Hamburger button (mobile only) ── */
+.btn-refresh {
+  display:flex;align-items:center;gap:6px;
+  background:var(--gray2);border:1px solid var(--gray3);
+  color:var(--navy);font-family:'Tajawal',sans-serif;
+  font-size:13px;font-weight:700;padding:7px 14px;
+  border-radius:8px;cursor:pointer;transition:all .2s;
+}
+.btn-refresh:hover{background:var(--gray3);}
+.btn-refresh.spinning #refreshIcon{display:inline-block;animation:spin360 .8s linear infinite;}
+.btn-refresh.spinning .btn-refresh-text::after{content:'...';}
+@keyframes spin360{to{transform:rotate(360deg);}}
+@media(max-width:640px){.btn-refresh-text{display:none;}}
+
 .hamburger {
   display: none;
   background: none;
@@ -772,6 +785,10 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
     <div class="topbar-title" id="topbarTitle">Dashboard</div>
     <div class="topbar-right">
       <button class="save-btn" id="saveBtn" onclick="saveData()">💾 Save Data</button>
+      <button class="btn-refresh" id="refreshBtn" onclick="refreshAllData()" title="Refresh data from all sources">
+        <span id="refreshIcon">🔄</span>
+        <span class="btn-refresh-text">Refresh</span>
+      </button>
       <button class="add-btn" id="addBtn" onclick="openAdd()">+ Add Asset</button>
       <div class="user-pill" id="userPill" onclick="toggleUserMenu()">
         <div class="user-avatar" id="userAvatar">A</div>
@@ -3166,6 +3183,12 @@ async function saveImageForAsset(assetCode) {
       localStorage.setItem('itam_img_' + assetCode, json.secure_url);
       _pendingFile = null;
       notify('Image uploaded successfully', 'success');
+      // Save URL to Firebase so all devices can see it
+      fbSet('images/' + assetKey(assetCode), {
+        url: json.secure_url,
+        code: assetCode,
+        updatedAt: new Date().toISOString()
+      }).catch(function(e){ console.warn('Firebase image save error:', e); });
     } else {
       throw new Error(json.error ? json.error.message : 'Upload failed');
     }
@@ -3179,31 +3202,64 @@ async function saveImageForAsset(assetCode) {
 }
 
 // ── Get image URL for an asset ──
-// Checks localStorage first (fast), then nothing (URL is the source of truth)
+// Returns from localStorage cache (populated from Firebase on load)
 function getAssetImage(assetCode) {
   return localStorage.getItem('itam_img_' + assetCode) || '';
 }
 
-// ── Sync image URLs from Cloudinary on load ──
-// (useful when switching devices — rebuilds local cache from Cloudinary)
-function syncImagesFromCloudinary() {
-  // Images are stored by public_id: itassets_<code>
-  // We reconstruct the URL pattern:
-  // https://res.cloudinary.com/<cloud>/image/upload/itassets_<code>
-  assets.forEach(function(a) {
-    if (!localStorage.getItem('itam_img_' + a.code)) {
-      var guessUrl = 'https://res.cloudinary.com/' + CLOUDINARY_CLOUD
-        + '/image/upload/it_assets/itassets_' + a.code.replace(/[^a-zA-Z0-9]/g,'_');
-      // Verify it exists with a HEAD request
-      fetch(guessUrl, { method: 'HEAD' })
-        .then(function(r) {
-          if (r.ok) {
-            localStorage.setItem('itam_img_' + a.code, guessUrl);
-            // Refresh visible thumbnails
-            var imgs = document.querySelectorAll('[data-asset-code="' + a.code + '"]');
-            imgs.forEach(function(img) { img.src = guessUrl; });
-          }
-        }).catch(function(){});
+// ── Sync image URLs from Firebase to local cache ──
+// Called on login — pulls all image URLs from Firebase to localStorage
+// This means every device sees the same images
+async function syncImagesFromCloudinary() {
+  if (!_fbDb) return;
+  try {
+    var fbImages = await fbGet('images');
+    if (!fbImages) return;
+    var updated = 0;
+    Object.values(fbImages).forEach(function(img) {
+      if (img && img.url && img.code) {
+        var stored = localStorage.getItem('itam_img_' + img.code);
+        if (stored !== img.url) {
+          localStorage.setItem('itam_img_' + img.code, img.url);
+          updated++;
+          // Refresh visible thumbnails if page is open
+          var thumbs = document.querySelectorAll('[data-asset-code="' + img.code + '"]');
+          thumbs.forEach(function(el) { el.src = img.url; });
+        }
+      }
+    });
+    if (updated > 0) {
+      console.log('Synced ' + updated + ' images from Firebase');
+      // Re-render assets table if visible to show new thumbnails
+      var ap = document.querySelector('.page.active');
+      if (ap && ap.id === 'page-assets') renderAssets();
+    }
+  } catch(e) {
+    console.warn('Image sync error:', e.message);
+  }
+}
+
+// ── Real-time image listener — new images appear on all devices instantly ──
+function startImageListener() {
+  if (!_fbDb) return;
+  _fbDb.ref('images').on('value', function(snap) {
+    var fbImages = snap.val();
+    if (!fbImages) return;
+    var updated = 0;
+    Object.values(fbImages).forEach(function(img) {
+      if (img && img.url && img.code) {
+        var stored = localStorage.getItem('itam_img_' + img.code);
+        if (stored !== img.url) {
+          localStorage.setItem('itam_img_' + img.code, img.url);
+          updated++;
+          var thumbs = document.querySelectorAll('[data-asset-code="' + img.code + '"]');
+          thumbs.forEach(function(el) { el.src = img.url; });
+        }
+      }
+    });
+    if (updated > 0) {
+      var ap = document.querySelector('.page.active');
+      if (ap && ap.id === 'page-assets') renderAssets();
     }
   });
 }
@@ -3705,6 +3761,52 @@ async function syncNow(){
 }
 
 // ════════════════════════════════════════════
+//  REFRESH ALL DATA
+// ════════════════════════════════════════════
+async function refreshAllData() {
+  var btn = document.getElementById('refreshBtn');
+  if (btn) btn.classList.add('spinning');
+
+  var count = 0;
+  try {
+    // 1. Reload from Google Sheets
+    try {
+      var sheetOk = await loadFromSheets(true);
+      if (sheetOk) count++;
+    } catch(e) { console.warn('Sheet refresh failed:', e.message); }
+
+    // 2. Reload from Firebase
+    try {
+      var fbOk = await loadFromFirebase();
+      if (fbOk) count++;
+    } catch(e) { console.warn('Firebase refresh failed:', e.message); }
+
+    // 3. Sync images
+    try {
+      await syncImagesFromCloudinary();
+    } catch(e) {}
+
+    // 4. Re-render current page
+    renderDashboard();
+    var ap = document.querySelector('.page.active');
+    if (ap) {
+      if (ap.id === 'page-assets')    renderAssets();
+      if (ap.id === 'page-analytics') { renderPivot(); populateAnalyticsFilters(); }
+      if (ap.id === 'page-history')   renderHistory();
+      if (ap.id === 'page-alerts')    renderAlerts();
+      if (ap.id === 'page-reports')   renderReports();
+    }
+    updateAlertBadge();
+    notify('Data refreshed — ' + assets.length + ' assets loaded', 'success');
+
+  } catch(e) {
+    notify('Refresh error: ' + e.message, 'error');
+  } finally {
+    if (btn) btn.classList.remove('spinning');
+  }
+}
+
+// ════════════════════════════════════════════
 //  RESPONSIVE SIDEBAR TOGGLE
 // ════════════════════════════════════════════
 function toggleSidebar() {
@@ -4152,8 +4254,11 @@ async function onLoginSuccess(){
     renderDashboard();
     updateAlertBadge();
 
-    // 4. Real-time listener — changes on any device appear instantly
-    if (fbReady) startFirebaseListener();
+    // 4. Real-time listeners — changes on any device appear instantly
+    if (fbReady) {
+      startFirebaseListener();
+      startImageListener();
+    }
 
     // 5. Sheets polling every 30s for Sheet-side additions
     startPolling();
