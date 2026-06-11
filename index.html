@@ -2671,7 +2671,12 @@ function showDetail(id){
   if(assetImg){
     var _safeName = a.name.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     var _safeCode = a.code.replace(/'/g,'&#39;');
-    _imgHtml = '<img src="' + assetImg + '" class="detail-img" alt="' + _safeName + '" style="cursor:zoom-in" onclick="viewImageLarge(\'' + _safeCode + '\',\'' + _safeName + '\')">';
+    _imgHtml = '<div style="position:relative;margin-bottom:16px">'
+      + '<img src="' + assetImg + '" class="detail-img" alt="' + _safeName + '" style="cursor:zoom-in;margin-bottom:0" onclick="viewImageLarge(\'' + _safeCode + '\',\'' + _safeName + '\')">'
+      + '<button id="detailImgDeleteBtn" onclick="deleteAssetImageNow(\'' + _safeCode + '\')" '
+      + 'style="position:absolute;top:8px;right:8px;background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:700;font-family:Tajawal,sans-serif">'
+      + '🗑 Delete Image</button>'
+      + '</div>';
   }
   document.getElementById('detailBody').innerHTML=`
     ${_imgHtml}
@@ -3199,8 +3204,13 @@ async function saveImageForAsset(assetCode) {
   if (_imageMarkedForDelete || (!_pendingFile && !_currentImageUrl)) {
     localStorage.removeItem('itam_img_' + assetCode);
     _imageMarkedForDelete = false;
-    // Delete from Firebase so all devices lose the image
-    fbRemove('images/' + assetKey(assetCode)).catch(function(){});
+    // Delete from Firebase immediately and await it
+    try {
+      await fbRemove('images/' + assetKey(assetCode));
+      console.log('Image deleted from Firebase:', assetCode);
+    } catch(e) {
+      console.warn('Firebase image delete error:', e);
+    }
     return;
   }
   // Case 2: no new file picked — keep existing URL
@@ -3242,6 +3252,34 @@ async function saveImageForAsset(assetCode) {
     var uploadBtn2 = document.getElementById('imgUploadBox');
     if (uploadBtn2) uploadBtn2.style.opacity = '1';
   }
+}
+
+
+// ── Delete asset image immediately (from detail view) ──
+async function deleteAssetImageNow(assetCode) {
+  if (!confirm('Delete this image permanently?')) return;
+  // Remove from localStorage
+  localStorage.removeItem('itam_img_' + assetCode);
+  // Remove from Firebase
+  try {
+    await fbRemove('images/' + assetKey(assetCode));
+    notify('Image deleted', 'success');
+  } catch(e) {
+    notify('Delete error: ' + e.message, 'error');
+  }
+  // Re-render detail if still open
+  var body = document.getElementById('detailBody');
+  if (body) {
+    // Remove the img element
+    var imgs = body.querySelectorAll('.detail-img');
+    imgs.forEach(function(img) { img.remove(); });
+    // Hide delete button
+    var delBtn = document.getElementById('detailImgDeleteBtn');
+    if (delBtn) delBtn.style.display = 'none';
+  }
+  // Re-render assets table
+  var ap = document.querySelector('.page.active');
+  if (ap && ap.id === 'page-assets') renderAssets();
 }
 
 // ── Get image URL for an asset ──
@@ -3290,7 +3328,11 @@ function startImageListener() {
     var needsRender = false;
 
     // Build set of codes that HAVE images in Firebase
-    var fbCodes = new Set(Object.values(fbImages).map(function(img){ return img && img.code; }).filter(Boolean));
+    var fbCodes = new Set(
+      Object.values(fbImages)
+        .map(function(img){ return img && img.code; })
+        .filter(Boolean)
+    );
 
     // 1. Add/update images from Firebase → localStorage
     Object.values(fbImages).forEach(function(img) {
@@ -3298,7 +3340,6 @@ function startImageListener() {
         var stored = localStorage.getItem('itam_img_' + img.code);
         if (stored !== img.url) {
           localStorage.setItem('itam_img_' + img.code, img.url);
-          // Update visible thumbnails immediately
           var thumbs = document.querySelectorAll('[data-asset-code="' + img.code + '"]');
           thumbs.forEach(function(el) { el.src = img.url; });
           needsRender = true;
@@ -3306,21 +3347,32 @@ function startImageListener() {
       }
     });
 
-    // 2. Remove images deleted in Firebase from localStorage
-    // Scan localStorage for itam_img_ keys not present in Firebase
+    // 2. Remove images deleted from Firebase → remove from localStorage
     var toRemove = [];
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
       if (k && k.startsWith('itam_img_')) {
         var code = k.replace('itam_img_', '');
         if (!fbCodes.has(code)) {
-          toRemove.push(k);
+          toRemove.push({ key: k, code: code });
         }
       }
     }
-    toRemove.forEach(function(k) {
-      localStorage.removeItem(k);
+    toRemove.forEach(function(item) {
+      localStorage.removeItem(item.key);
       needsRender = true;
+      // Clear thumbnails for deleted image
+      var thumbs = document.querySelectorAll('[data-asset-code="' + item.code + '"]');
+      thumbs.forEach(function(el) {
+        // Replace with type icon placeholder
+        var parent = el.parentNode;
+        if (parent) {
+          var placeholder = document.createElement('div');
+          placeholder.className = 'asset-thumb-placeholder';
+          placeholder.textContent = '📦';
+          parent.replaceChild(placeholder, el);
+        }
+      });
     });
 
     // 3. Re-render if anything changed
