@@ -384,6 +384,9 @@
   .topbar-title { max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 </style>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1374,6 +1377,278 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
 
 <script>
 // ════════════════════════════════════════════
+//  FIREBASE CONFIGURATION & INIT
+// ════════════════════════════════════════════
+var FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCblu2orw1RMZR9XlerTzHYC5-j47dfVio",
+  databaseURL:       "https://it-assets-499c9-default-rtdb.firebaseio.com",
+  projectId:         "it-assets-499c9",
+};
+
+var _fbApp = null;
+var _fbDb  = null;
+var _fbListeners = {};
+
+function initFirebase() {
+  try {
+    if (!firebase || !firebase.apps) return false;
+    if (firebase.apps.length === 0) {
+      _fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+    } else {
+      _fbApp = firebase.apps[0];
+    }
+    _fbDb = firebase.database();
+    console.log("Firebase initialized ✓");
+    return true;
+  } catch(e) {
+    console.warn("Firebase init failed:", e.message);
+    return false;
+  }
+}
+
+// ── Firebase helpers ──
+async function fbSet(path, data) {
+  if (!_fbDb) return false;
+  try {
+    await _fbDb.ref(path).set(data);
+    return true;
+  } catch(e) {
+    console.warn("fbSet error:", path, e.message);
+    return false;
+  }
+}
+
+async function fbUpdate(path, data) {
+  if (!_fbDb) return false;
+  try {
+    await _fbDb.ref(path).update(data);
+    return true;
+  } catch(e) {
+    console.warn("fbUpdate error:", path, e.message);
+    return false;
+  }
+}
+
+async function fbRemove(path) {
+  if (!_fbDb) return false;
+  try {
+    await _fbDb.ref(path).remove();
+    return true;
+  } catch(e) {
+    console.warn("fbRemove error:", path, e.message);
+    return false;
+  }
+}
+
+async function fbGet(path) {
+  if (!_fbDb) return null;
+  try {
+    var snap = await _fbDb.ref(path).once('value');
+    return snap.val();
+  } catch(e) {
+    console.warn("fbGet error:", path, e.message);
+    return null;
+  }
+}
+
+// ── Listen for real-time changes ──
+function fbListen(path, callback) {
+  if (!_fbDb) return;
+  if (_fbListeners[path]) {
+    _fbDb.ref(path).off('value', _fbListeners[path]);
+  }
+  _fbListeners[path] = _fbDb.ref(path).on('value', function(snap) {
+    callback(snap.val());
+  });
+}
+
+// ── Safe asset key (Firebase keys can't have . # $ / [ ]) ──
+function assetKey(code) {
+  return (code || 'unknown').replace(/[.#$\/\[\]]/g, '_');
+}
+
+// ════════════════════════════════════════════
+//  FIREBASE DATA OPERATIONS
+// ════════════════════════════════════════════
+
+// Save single asset to Firebase
+async function fbSaveAsset(asset) {
+  var key = assetKey(asset.code);
+  return fbSet('assets/' + key, {
+    id:       String(asset.id),
+    code:     asset.code     || '',
+    name:     asset.name     || '',
+    type:     asset.type     || '',
+    serial:   asset.serial   || '',
+    branch:   asset.branch   || '',
+    dept:     asset.dept     || '',
+    employee: asset.employee || '',
+    empId:    asset.empId    || '',
+    brand:    asset.brand    || '',
+    purchase: asset.purchase || '',
+    warranty: asset.warranty || '',
+    status:   asset.status   || 'Active',
+    notes:    asset.notes    || '',
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+// Delete asset from Firebase
+async function fbDeleteAsset(code) {
+  return fbRemove('assets/' + assetKey(code));
+}
+
+// Save history entry to Firebase
+async function fbSaveHistory(entry) {
+  var key = Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  return fbSet('history/' + key, {
+    date:   entry.date   || '',
+    code:   entry.code   || '',
+    name:   entry.name   || '',
+    action: entry.action || '',
+    from:   entry.from   || '',
+    to:     entry.to     || '',
+    notes:  entry.notes  || '',
+    user:   entry.user   || '',
+  });
+}
+
+// Save users to Firebase
+async function fbSaveUsers(usersArr) {
+  var data = {};
+  usersArr.forEach(function(u) {
+    data['user_' + u.id] = {
+      id:       String(u.id),
+      name:     u.name     || '',
+      username: u.username || '',
+      password: u.password || '',
+      role:     u.role     || 'viewer',
+      perms:    JSON.stringify(u.perms || []),
+      active:   u.active !== false,
+      email:    u.email    || '',
+    };
+  });
+  return fbSet('users', data);
+}
+
+// Load all data from Firebase
+async function loadFromFirebase() {
+  if (!_fbDb) return false;
+  try {
+    var fbAssets = await fbGet('assets');
+    var fbHist   = await fbGet('history');
+    var fbUsers  = await fbGet('users');
+    var fbBranch = await fbGet('branches');
+    var fbTypes  = await fbGet('types');
+
+    // ── Merge Firebase assets with Sheet assets ──
+    // Firebase assets OVERRIDE Sheet assets (same code = Firebase wins)
+    var sheetMap = {};
+    assets.forEach(function(a) { sheetMap[a.code] = a; });
+
+    if (fbAssets) {
+      Object.values(fbAssets).forEach(function(a) {
+        sheetMap[a.code] = {
+          id:       a.code,
+          code:     a.code     || '',
+          name:     a.name     || '',
+          type:     a.type     || 'Other',
+          serial:   a.serial   || '',
+          branch:   a.branch   || '',
+          dept:     a.dept     || '',
+          employee: a.employee || '',
+          empId:    a.empId    || '',
+          brand:    a.brand    || '',
+          purchase: a.purchase || '',
+          warranty: a.warranty || '',
+          status:   a.status   || 'Active',
+          notes:    a.notes    || '',
+        };
+      });
+    }
+    assets = Object.values(sheetMap);
+
+    // ── History ──
+    if (fbHist) {
+      var histArr = Object.values(fbHist).sort(function(a,b){
+        return (b.date||'').localeCompare(a.date||'');
+      });
+      history = histArr;
+    }
+
+    // ── Users ──
+    if (fbUsers) {
+      var fbUserArr = Object.values(fbUsers).map(function(u) {
+        try { u.perms = JSON.parse(u.perms); } catch(e) { u.perms = []; }
+        u.active = u.active !== false && u.active !== 'false';
+        u.id     = Number(u.id) || u.id;
+        return u;
+      });
+      if (fbUserArr.length) {
+        users = fbUserArr;
+        localStorage.setItem('itam_users', JSON.stringify(users));
+      }
+    }
+
+    // ── Branches ──
+    if (fbBranch) {
+      var bObj = {};
+      Object.entries(fbBranch).forEach(function(kv) {
+        bObj[kv[0]] = typeof kv[1] === 'string' ? kv[1].split(',') : kv[1];
+      });
+      if (Object.keys(bObj).length) branches = bObj;
+    }
+
+    // ── Types ──
+    if (fbTypes && Array.isArray(fbTypes) && fbTypes.length) {
+      types = fbTypes;
+    }
+
+    updateCache();
+    return true;
+  } catch(e) {
+    console.warn("loadFromFirebase error:", e.message);
+    return false;
+  }
+}
+
+// ── Real-time listener: update assets when Firebase changes ──
+function startFirebaseListener() {
+  if (!_fbDb) return;
+  _fbDb.ref('assets').on('value', function(snap) {
+    var fbAssets = snap.val();
+    if (!fbAssets) return;
+    // Merge with current (Sheet) assets
+    var sheetMap = {};
+    assets.forEach(function(a) { sheetMap[a.code] = a; });
+    Object.values(fbAssets).forEach(function(a) {
+      sheetMap[a.code] = {
+        id: a.code, code:a.code||'', name:a.name||'',
+        type:a.type||'Other', serial:a.serial||'',
+        branch:a.branch||'', dept:a.dept||'',
+        employee:a.employee||'', empId:a.empId||'',
+        brand:a.brand||'', purchase:a.purchase||'',
+        warranty:a.warranty||'', status:a.status||'Active',
+        notes:a.notes||'',
+      };
+    });
+    var newAssets = Object.values(sheetMap);
+    // Only re-render if something actually changed
+    if (JSON.stringify(newAssets) !== JSON.stringify(assets)) {
+      assets = newAssets;
+      updateCache();
+      var ap = document.querySelector('.page.active');
+      if (ap) {
+        if (ap.id === 'page-dashboard') renderDashboard();
+        if (ap.id === 'page-assets')    renderAssets();
+        if (ap.id === 'page-alerts')    renderAlerts();
+        updateAlertBadge();
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════
 //  HELPERS (localStorage for users/settings only)
 // ════════════════════════════════════════════
 function load(key, def) {
@@ -1440,12 +1715,10 @@ let editingUserId = null;
 
 function saveUsers(){
   localStorage.setItem('itam_users', JSON.stringify(users));
-  // Also persist to Google Sheets if GAS write-back is configured
-  if(GAS_URL){
-    gasCall('saveUsers', {users: users}).catch(function(e){
-      console.warn('Could not sync users to Sheets:', e.message);
-    });
-  }
+  // Save to Firebase
+  fbSaveUsers(users).catch(function(e){
+    console.warn('Could not sync users to Firebase:', e.message);
+  });
 }
 
 // ── LOGIN / LOGOUT ──
@@ -2215,25 +2488,28 @@ function bulkDelete(){
     const a=assets.find(x=>x.id===id);
     if(a)history.unshift({date:today(),code:a.code,name:a.name,action:'Deleted',from:`${a.dept}/${a.branch}`,to:'—',notes:'Bulk delete'});
   });
-  const deletedIds=[...selectedIds];
-  assets=assets.filter(a=>![...selectedIds].map(String).includes(String(a.id)));
+  var deletedAssets = assets.filter(function(a){ return [...selectedIds].map(String).includes(String(a.id)); });
+  assets=assets.filter(function(a){ return ![...selectedIds].map(String).includes(String(a.id)); });
   selectedIds.clear(); updateBulkBar();
   updateCache();
-  notify(`Assets deleted`,'success'); renderAssets(); renderDashboard();
-  if(GAS_URL) deletedIds.forEach(id=>gasCall('deleteAsset',{id}).catch(()=>{}));
+  notify('Assets deleted', 'success'); renderAssets(); renderDashboard();
+  // Remove from Firebase
+  deletedAssets.forEach(function(a){
+    fbDeleteAsset(a.code).catch(function(){});
+    fbSaveHistory({date:today(),code:a.code,name:a.name,action:'Deleted',from:a.dept+'/'+a.branch,to:'--',notes:'Bulk delete',user:(currentUser&&currentUser.name)||''}).catch(function(){});
+  });
 }
 function delAsset(id){
   const a=assets.find(x=>String(x.id)===String(id)); if(!a)return;
   if(!confirm(`Delete "${a.name}"?`))return;
-  assets=assets.filter(x=>String(x.id)!==String(id));
-  const delHist={date:today(),code:a.code,name:a.name,action:'Deleted',from:`${a.dept}/${a.branch}`,to:'—',notes:'Removed',user:currentUser?.name||''};
+  assets=assets.filter(function(x){ return String(x.id)!==String(id); });
+  var delHist={date:today(),code:a.code,name:a.name,action:'Deleted',from:a.dept+'/'+a.branch,to:'--',notes:'Removed',user:(currentUser&&currentUser.name)||''};
   history.unshift(delHist);
   updateCache();
-  notify(`"${a.name}" deleted`,'success'); renderAssets(); renderDashboard();
-  if(GAS_URL){
-    gasCall('deleteAsset',{id}).catch(e=>notify('Sync error: '+e.message,'warn'));
-    gasCall('addHistory',{entry:delHist}).catch(()=>{});
-  }
+  notify('"' + a.name + '" deleted', 'success'); renderAssets(); renderDashboard();
+  // Remove from Firebase
+  fbDeleteAsset(a.code).catch(function(e){ console.warn('Firebase delete error:', e); });
+  fbSaveHistory(delHist).catch(function(){});
 }
 
 // ════════════════════════════════════════════
@@ -2318,14 +2594,15 @@ async function saveAsset(){
   await saveImageForAsset(a.code);
   updateCache();
   closeModal('assetModal'); renderAssets(); renderDashboard();
-  notify(editingId?`"${name}" updated`:`"${name}" added`,'success');
+  notify(editingId ? '"' + name + '" updated' : '"' + name + '" added', 'success');
 
-  // Sync to Google Sheets in background
-  if(GAS_URL){
-    gasCall('saveAsset',{asset:a}).catch(e=>notify('Sync error: '+e.message,'warn'));
-    gasCall('addHistory',{entry:histEntry}).catch(()=>{});
-    gasCall('setConfig',{key:'nextId',value:nextId}).catch(()=>{});
-  }
+  // Save to Firebase (source of truth for all devices)
+  fbSaveAsset(a).then(function(){
+    console.log("Asset saved to Firebase:", a.code);
+  }).catch(function(e){
+    notify('Firebase sync error: ' + e.message, 'warn');
+  });
+  fbSaveHistory(histEntry).catch(function(){});
 }
 
 // ════════════════════════════════════════════
@@ -2403,22 +2680,24 @@ function populateTransferDept(){
   if(b&&branches[b])branches[b].forEach(dep=>{const o=new Option(dep,dep);d.appendChild(o);});
 }
 function confirmTransfer(){
-  const a=assets.find(x=>String(x.id)===String(transferId));if(!a)return;
-  const nb=document.getElementById('t_branch').value, nd=document.getElementById('t_dept').value;
+  var a=assets.find(function(x){return String(x.id)===String(transferId);});
+  if(!a) return;
+  var nb=document.getElementById('t_branch').value;
+  var nd=document.getElementById('t_dept').value;
   if(!nb||!nd){notify('Select branch and department','warn');return;}
-  const from=`${a.dept}/${a.branch}`;
+  var from=a.dept+'/'+a.branch;
   a.branch=nb; a.dept=nd;
-  const ne=document.getElementById('t_emp').value.trim();
-  if(ne)a.employee=ne;
-  const tHist={date:today(),code:a.code,name:a.name,action:'Transferred',from,to:`${nd}/${nb}`,notes:document.getElementById('t_notes').value||'Transfer',user:currentUser?.name||''};
+  var ne=document.getElementById('t_emp').value.trim();
+  if(ne) a.employee=ne;
+  var tNotes=document.getElementById('t_notes').value||'Transfer';
+  var tHist={date:today(),code:a.code,name:a.name,action:'Transferred',from:from,to:nd+'/'+nb,notes:tNotes,user:(currentUser&&currentUser.name)||''};
   history.unshift(tHist);
   updateCache();
-  notify(`"${a.name}" transferred`,'success');
+  notify('"' + a.name + '" transferred', 'success');
   closeModal('transferModal'); renderAssets(); renderDashboard();
-  if(GAS_URL){
-    gasCall('saveAsset',{asset:a}).catch(()=>{});
-    gasCall('addHistory',{entry:tHist}).catch(()=>{});
-  }
+  // Save to Firebase
+  fbSaveAsset(a).catch(function(){});
+  fbSaveHistory(tHist).catch(function(){});
 }
 
 // ════════════════════════════════════════════
@@ -3101,13 +3380,14 @@ function confirmImport(){
   _importRows=[];
   updateCache();
   closeModal('importPreviewModal');
-  notify(`✅ ${added} assets imported successfully`,'success');
+  notify('Assets imported successfully: ' + added, 'success');
   renderAssets(); renderDashboard();
-  if(GAS_URL){
-    const toImport=assets.slice(-added);
-    gasCall('bulkImport',{assets:toImport}).catch(e=>notify('Sync error: '+e.message,'warn'));
-    gasCall('setConfig',{key:'nextId',value:nextId}).catch(()=>{});
-  }
+  // Save all imported assets to Firebase
+  var toImport = assets.slice(-added);
+  toImport.forEach(function(a){
+    fbSaveAsset(a).catch(function(){});
+    fbSaveHistory({date:today(),code:a.code,name:a.name,action:'Imported',from:'--',to:a.dept+'/'+a.branch,notes:'Bulk import',user:(currentUser&&currentUser.name)||''}).catch(function(){});
+  });
 }
 
 // ════════════════════════════════════════════
@@ -3846,21 +4126,45 @@ window.addEventListener('load', () => {
 // Called after successful login
 async function onLoginSuccess(){
   try {
-    showLoadingOverlay(true, 'D.B Reading Please Wait…');
+    showLoadingOverlay(true, 'D.B Reading Please Wait...');
+
+    // 1. Init Firebase
+    var fbReady = initFirebase();
+
+    // 2. Load from Google Sheets (base data)
     try {
-      await loadFromSheets(false);
+      await loadFromSheets(true);
     } catch(e) {
-      console.warn('Sheet load failed, using cache:', e);
+      console.warn('Sheet load failed:', e.message);
       loadFromCache();
     }
+
+    // 3. Load from Firebase (overrides + merges with Sheet data)
+    if (fbReady) {
+      try {
+        await loadFromFirebase();
+      } catch(e) {
+        console.warn('Firebase load failed:', e.message);
+      }
+    }
+
     showLoadingOverlay(false);
     renderDashboard();
     updateAlertBadge();
+
+    // 4. Real-time listener — changes on any device appear instantly
+    if (fbReady) startFirebaseListener();
+
+    // 5. Sheets polling every 30s for Sheet-side additions
     startPolling();
+
+    // 6. Sync Cloudinary image cache
     setTimeout(syncImagesFromCloudinary, 2000);
-    const now = new Date();
-    const ac  = assets.filter(a => a.warranty && (new Date(a.warranty)-now)/86400000 < 90).length;
-    if(ac) setTimeout(() => notify(`⚠ ${ac} warranty alerts require attention`, 'warn'), 1500);
+
+    var now = new Date();
+    var ac  = assets.filter(function(a){ return a.warranty && (new Date(a.warranty)-now)/86400000 < 90; }).length;
+    if (ac) setTimeout(function(){ notify('Warning: ' + ac + ' warranty alerts require attention', 'warn'); }, 1500);
+
   } catch(e) {
     showLoadingOverlay(false);
     console.error('onLoginSuccess error:', e);
