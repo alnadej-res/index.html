@@ -1632,10 +1632,11 @@ async function loadFromFirebase() {
 // ── Real-time listener: update assets when Firebase changes ──
 function startFirebaseListener() {
   if (!_fbDb) return;
+
+  // ── Assets listener ──
   _fbDb.ref('assets').on('value', function(snap) {
     var fbAssets = snap.val();
     if (!fbAssets) return;
-    // Merge with current (Sheet) assets
     var sheetMap = {};
     assets.forEach(function(a) { sheetMap[a.code] = a; });
     Object.values(fbAssets).forEach(function(a) {
@@ -1650,7 +1651,6 @@ function startFirebaseListener() {
       };
     });
     var newAssets = Object.values(sheetMap);
-    // Only re-render if something actually changed
     if (JSON.stringify(newAssets) !== JSON.stringify(assets)) {
       assets = newAssets;
       updateCache();
@@ -1661,6 +1661,41 @@ function startFirebaseListener() {
         if (ap.id === 'page-alerts')    renderAlerts();
         updateAlertBadge();
       }
+    }
+  });
+
+  // ── Users listener — new users appear on all devices instantly ──
+  _fbDb.ref('users').on('value', function(snap) {
+    var fbUsers = snap.val();
+    if (!fbUsers) return;
+    var fbUserArr = Object.values(fbUsers).map(function(u) {
+      try { u.perms = typeof u.perms === 'string' ? JSON.parse(u.perms) : (u.perms || []); } catch(e) { u.perms = []; }
+      u.active = u.active !== false && u.active !== 'false';
+      u.id     = Number(u.id) || u.id;
+      return u;
+    });
+    if (!fbUserArr.length) return;
+    var changed = JSON.stringify(fbUserArr) !== JSON.stringify(users);
+    if (changed) {
+      users = fbUserArr;
+      localStorage.setItem('itam_users', JSON.stringify(users));
+      // Re-render users page if open
+      var ap = document.querySelector('.page.active');
+      if (ap && ap.id === 'page-users') renderUsers();
+    }
+  });
+
+  // ── History listener ──
+  _fbDb.ref('history').on('value', function(snap) {
+    var fbHist = snap.val();
+    if (!fbHist) return;
+    var histArr = Object.values(fbHist).sort(function(a,b){
+      return (b.date||'').localeCompare(a.date||'');
+    });
+    if (JSON.stringify(histArr) !== JSON.stringify(history)) {
+      history = histArr;
+      var ap = document.querySelector('.page.active');
+      if (ap && ap.id === 'page-history') renderHistory();
     }
   });
 }
@@ -3135,12 +3170,16 @@ function removeImage() {
   _pendingFile     = null;
   document.getElementById('f_image').value = '';
   showImagePreview('');
+  // Mark for deletion from Firebase when saved
+  _imageMarkedForDelete = true;
 }
+var _imageMarkedForDelete = false;
 
 // ── Reset form image state ──
 function resetImageForm() {
-  _currentImageUrl = '';
-  _pendingFile     = null;
+  _currentImageUrl        = '';
+  _pendingFile            = null;
+  _imageMarkedForDelete   = false;
   document.getElementById('f_image').value = '';
   showImagePreview('');
 }
@@ -3148,16 +3187,20 @@ function resetImageForm() {
 // ── Load existing image when editing ──
 function loadImageForEdit(assetCode) {
   var url = getAssetImage(assetCode);
-  _currentImageUrl = url;
-  _pendingFile     = null;
+  _currentImageUrl      = url;
+  _pendingFile          = null;
+  _imageMarkedForDelete = false;
   showImagePreview(url);
 }
 
 // ── Upload to Cloudinary then save URL ──
 async function saveImageForAsset(assetCode) {
-  // Case 1: user removed image
-  if (!_pendingFile && !_currentImageUrl) {
+  // Case 1: user removed image — delete from Firebase + localStorage
+  if (_imageMarkedForDelete || (!_pendingFile && !_currentImageUrl)) {
     localStorage.removeItem('itam_img_' + assetCode);
+    _imageMarkedForDelete = false;
+    // Delete from Firebase so all devices lose the image
+    fbRemove('images/' + assetKey(assetCode)).catch(function(){});
     return;
   }
   // Case 2: no new file picked — keep existing URL
@@ -3239,25 +3282,49 @@ async function syncImagesFromCloudinary() {
   }
 }
 
-// ── Real-time image listener — new images appear on all devices instantly ──
+// ── Real-time image listener — add/update/DELETE synced on all devices ──
 function startImageListener() {
   if (!_fbDb) return;
   _fbDb.ref('images').on('value', function(snap) {
-    var fbImages = snap.val();
-    if (!fbImages) return;
-    var updated = 0;
+    var fbImages = snap.val() || {};
+    var needsRender = false;
+
+    // Build set of codes that HAVE images in Firebase
+    var fbCodes = new Set(Object.values(fbImages).map(function(img){ return img && img.code; }).filter(Boolean));
+
+    // 1. Add/update images from Firebase → localStorage
     Object.values(fbImages).forEach(function(img) {
       if (img && img.url && img.code) {
         var stored = localStorage.getItem('itam_img_' + img.code);
         if (stored !== img.url) {
           localStorage.setItem('itam_img_' + img.code, img.url);
-          updated++;
+          // Update visible thumbnails immediately
           var thumbs = document.querySelectorAll('[data-asset-code="' + img.code + '"]');
           thumbs.forEach(function(el) { el.src = img.url; });
+          needsRender = true;
         }
       }
     });
-    if (updated > 0) {
+
+    // 2. Remove images deleted in Firebase from localStorage
+    // Scan localStorage for itam_img_ keys not present in Firebase
+    var toRemove = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.startsWith('itam_img_')) {
+        var code = k.replace('itam_img_', '');
+        if (!fbCodes.has(code)) {
+          toRemove.push(k);
+        }
+      }
+    }
+    toRemove.forEach(function(k) {
+      localStorage.removeItem(k);
+      needsRender = true;
+    });
+
+    // 3. Re-render if anything changed
+    if (needsRender) {
       var ap = document.querySelector('.page.active');
       if (ap && ap.id === 'page-assets') renderAssets();
     }
