@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0063)file:///C:/Users/Lenovo/Downloads/Al_Nadeg_Dashboard_v2_17.html -->
+<!-- saved from url=(0063)file:///C:/Users/Lenovo/Downloads/Al_Nadeg_Dashboard_v2_18.html -->
 <html lang="ar" dir="rtl"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -236,7 +236,7 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
     </div>
     <nav class="nav">
       <div class="nav-label">لوحة التحكم</div>
-      <div class="nav-item active" onclick="showPage(&#39;overview&#39;)">
+      <div class="nav-item" onclick="showPage(&#39;overview&#39;)">
         <span class="nav-icon">📊</span> نظرة عامة
       </div>
       <div class="nav-item" onclick="showPage(&#39;entry&#39;)">
@@ -245,7 +245,7 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
       <div class="nav-item" onclick="showPage(&#39;apps&#39;)">
         <span class="nav-icon">📱</span> التطبيقات
       </div>
-      <div class="nav-item" onclick="showPage(&#39;history&#39;)">
+      <div class="nav-item active" onclick="showPage(&#39;history&#39;)">
         <span class="nav-icon">📅</span> السجل التاريخي
       </div>
       <div class="divider" style="margin:8px 20px;"></div>
@@ -278,7 +278,7 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
   <main class="main">
 
     <!-- OVERVIEW PAGE -->
-    <div class="page-section active" id="page-overview">
+    <div class="page-section" id="page-overview">
       <div class="page-header">
         <div>
           <div class="page-title">نظرة عامة <span>/ Overview</span></div>
@@ -479,8 +479,8 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
         </div>
         <div class="header-actions" style="position: relative;">
           <div style="position:relative;display:inline-block;">
-            <input type="date" id="entry-date" onchange="showDateFmt(this,&#39;entry-date-lbl&#39;)" style="opacity: 0; position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; cursor: pointer; color: var(--text);" title="10/06/2026">
-            <div id="entry-date-lbl" style="padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);cursor:pointer;min-width:130px;" onclick="document.getElementById(&#39;entry-date&#39;).showPicker&amp;&amp;document.getElementById(&#39;entry-date&#39;).showPicker()">10/06/2026</div>
+            <input type="date" id="entry-date" onchange="showDateFmt(this,&#39;entry-date-lbl&#39;)" style="opacity: 0; position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; cursor: pointer; color: var(--text);" title="11/06/2026">
+            <div id="entry-date-lbl" style="padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);cursor:pointer;min-width:130px;" onclick="document.getElementById(&#39;entry-date&#39;).showPicker&amp;&amp;document.getElementById(&#39;entry-date&#39;).showPicker()">11/06/2026</div>
           </div>
           <button class="btn" onclick="clearEntryInputs()">مسح</button>
           <button class="btn btn-primary" onclick="saveEntry()">💾 حفظ</button>
@@ -703,12 +703,12 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
         </div>
         <div class="header-actions" style="position: relative;">
           <div style="position:relative;display:inline-block;">
-            <input type="date" id="apps-from" onchange="showDateFmt(this,&#39;apps-from-lbl&#39;)" style="opacity: 0; position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; cursor: pointer; color: var(--text);" title="11/05/2026">
-            <div id="apps-from-lbl" style="padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);cursor:pointer;min-width:130px;" onclick="document.getElementById(&#39;apps-from&#39;).showPicker&amp;&amp;document.getElementById(&#39;apps-from&#39;).showPicker()">11/05/2026</div>
+            <input type="date" id="apps-from" onchange="showDateFmt(this,&#39;apps-from-lbl&#39;)" style="opacity: 0; position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; cursor: pointer; color: var(--text);" title="12/05/2026">
+            <div id="apps-from-lbl" style="padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);cursor:pointer;min-width:130px;" onclick="document.getElementById(&#39;apps-from&#39;).showPicker&amp;&amp;document.getElementById(&#39;apps-from&#39;).showPicker()">12/05/2026</div>
           </div>
           <div style="position:relative;display:inline-block;">
-            <input type="date" id="apps-to" onchange="showDateFmt(this,&#39;apps-to-lbl&#39;)" style="opacity: 0; position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; cursor: pointer; color: var(--text);" title="10/06/2026">
-            <div id="apps-to-lbl" style="padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);cursor:pointer;min-width:130px;" onclick="document.getElementById(&#39;apps-to&#39;).showPicker&amp;&amp;document.getElementById(&#39;apps-to&#39;).showPicker()">10/06/2026</div>
+            <input type="date" id="apps-to" onchange="showDateFmt(this,&#39;apps-to-lbl&#39;)" style="opacity: 0; position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; cursor: pointer; color: var(--text);" title="11/06/2026">
+            <div id="apps-to-lbl" style="padding:8px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);cursor:pointer;min-width:130px;" onclick="document.getElementById(&#39;apps-to&#39;).showPicker&amp;&amp;document.getElementById(&#39;apps-to&#39;).showPicker()">11/06/2026</div>
           </div>
           <button class="btn btn-primary" onclick="renderAppsPage()">تطبيق</button>
         </div>
@@ -718,7 +718,7 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
         <div class="card-header">
           <div class="card-title"><span class="dot" style="background:var(--purple)"></span>مقارنة إجمالي المبيعات / Total Sales Comparison</div>
         </div>
-        <div class="chart-wrap" style="height:260px;"><canvas id="appsBarChart" role="img" aria-label="مقارنة التطبيقات" style="box-sizing: border-box; display: block; height: 260px; width: 1186px;" width="1483" height="325"></canvas></div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="appsBarChart" role="img" aria-label="مقارنة التطبيقات"></canvas></div>
       </div>
 
       <div class="two-col">
@@ -726,13 +726,13 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
           <div class="card-header">
             <div class="card-title"><span class="dot" style="background:var(--gold)"></span>حصة السوق / Market Share</div>
           </div>
-          <div class="chart-wrap" style="height:220px;"><canvas id="pieChart" role="img" aria-label="حصة السوق" style="box-sizing: border-box; display: block; height: 220px; width: 564px;" width="705" height="275"></canvas></div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="pieChart" role="img" aria-label="حصة السوق"></canvas></div>
         </div>
         <div class="card">
           <div class="card-header">
             <div class="card-title"><span class="dot" style="background:var(--red)"></span>نسب التعويضات / Compensation Rates</div>
           </div>
-          <div class="chart-wrap" style="height:220px;"><canvas id="compRateChart" role="img" aria-label="نسب التعويضات" style="box-sizing: border-box; display: block; height: 220px; width: 564px;" width="705" height="275"></canvas></div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="compRateChart" role="img" aria-label="نسب التعويضات"></canvas></div>
         </div>
       </div>
 
@@ -746,63 +746,14 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
               <th>التطبيق</th><th>إجمالي المبيعات</th><th>إجمالي التعويضات</th>
               <th>نسبة التعويض</th><th>متوسط يومي</th><th>أعلى يوم</th>
             </tr></thead>
-            <tbody id="apps-detail-body"><tr>
-      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#4D9EFF;display:inline-block;"></span>Keeta</span></td>
-      <td><strong>210,980</strong> ر.س</td>
-      <td>966 ر.س</td>
-      <td><span class="badge badge-green">0.5%</span></td>
-      <td>105,490 ر.س</td>
-      <td>107,996 ر.س</td>
-    </tr><tr>
-      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#00D97E;display:inline-block;"></span>HungerStation</span></td>
-      <td><strong>164,235</strong> ر.س</td>
-      <td>1,032 ر.س</td>
-      <td><span class="badge badge-green">0.6%</span></td>
-      <td>82,118 ر.س</td>
-      <td>86,836 ر.س</td>
-    </tr><tr>
-      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#FFB547;display:inline-block;"></span>Jahez</span></td>
-      <td><strong>30,581</strong> ر.س</td>
-      <td>819 ر.س</td>
-      <td><span class="badge badge-gold">2.7%</span></td>
-      <td>15,291 ر.س</td>
-      <td>15,598 ر.س</td>
-    </tr><tr>
-      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#FF4D6D;display:inline-block;"></span>Ninja</span></td>
-      <td><strong>13,542</strong> ر.س</td>
-      <td>127 ر.س</td>
-      <td><span class="badge badge-green">0.9%</span></td>
-      <td>6,771 ر.س</td>
-      <td>8,249 ر.س</td>
-    </tr><tr>
-      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#34D399;display:inline-block;"></span>The Chefs</span></td>
-      <td><strong>6,352</strong> ر.س</td>
-      <td>68 ر.س</td>
-      <td><span class="badge badge-gold">1.1%</span></td>
-      <td>3,176 ر.س</td>
-      <td>3,195 ر.س</td>
-    </tr><tr>
-      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#FB923C;display:inline-block;"></span>To You</span></td>
-      <td><strong>3,872</strong> ر.س</td>
-      <td>35 ر.س</td>
-      <td><span class="badge badge-green">0.9%</span></td>
-      <td>1,936 ر.س</td>
-      <td>2,329 ر.س</td>
-    </tr><tr>
-      <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#A78BFA;display:inline-block;"></span>Marsol</span></td>
-      <td><strong>744</strong> ر.س</td>
-      <td>0 ر.س</td>
-      <td><span class="badge badge-green">0.0%</span></td>
-      <td>372 ر.س</td>
-      <td>431 ر.س</td>
-    </tr></tbody>
+            <tbody id="apps-detail-body"></tbody>
           </table>
         </div>
       </div>
     </div>
 
     <!-- HISTORY PAGE -->
-    <div class="page-section" id="page-history">
+    <div class="page-section active" id="page-history">
       <div class="page-header">
         <div>
           <div class="page-title">السجل التاريخي <span>/ History</span></div>
@@ -1561,40 +1512,81 @@ function printReport() {
 function importData() {
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = '.json';
+  input.accept = '.json,.csv,.xlsx,.xls';
   input.onchange = function(e) {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-      try {
-        const backup = JSON.parse(ev.target.result);
-        // Support both formats: direct array or {entries:[...]}
-        const arr = Array.isArray(backup) ? backup : (backup.entries || null);
-        if (!arr) { showToast('⚠️ ملف غير صحيح'); return; }
-        if (!confirm('سيتم استيراد ' + arr.length + ' إدخال. هل تريد المتابعة؟')) return;
-        // Merge with existing entries (don't overwrite)
-        const existing = getEntries();
-        const merged = [...existing];
-        let added = 0;
-        arr.forEach(e => {
-          if (!merged.find(x => x.date === e.date)) {
-            merged.push(e);
-            added++;
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    if (ext === 'json') {
+      // Handle JSON
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          const backup = JSON.parse(ev.target.result);
+          const arr = Array.isArray(backup) ? backup : (backup.entries || null);
+          if (!arr) { showToast('⚠️ ملف JSON غير صحيح'); return; }
+          mergeAndSave(arr);
+        } catch(err) { showToast('⚠️ خطأ في قراءة ملف JSON'); }
+      };
+      reader.readAsText(file);
+
+    } else if (ext === 'csv') {
+      // Handle CSV - format: date, app1_sales, app1_comp, app1_orders...
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          const lines = ev.target.result.trim().split('\n');
+          const headers = lines[0].split(',');
+          const arr = [];
+          for (let i = 1; i < lines.length; i++) {
+            const vals = lines[i].split(',');
+            if (!vals[0]) continue;
+            const date = vals[0].trim();
+            const entry = { date, apps: {} };
+            APPS.forEach((app, ai) => {
+              const base = 1 + ai * 5;
+              entry.apps[app] = {
+                sales:  parseFloat(vals[base])||0,
+                comp:   parseFloat(vals[base+1])||0,
+                orders: parseInt(vals[base+2])||0,
+                cancel: parseInt(vals[base+3])||0,
+                lost:   parseFloat(vals[base+4])||0,
+                net:    (parseFloat(vals[base])||0) * (1-(getCommissions()[app]||DEFAULT_COMM[app]||0.20)),
+              };
+            });
+            arr.push(entry);
           }
-        });
-        merged.sort((a,b) => a.date.localeCompare(b.date));
-        saveEntries(merged);
-        renderHistory();
-        showToast('✓ تم الاستيراد — ' + added + ' إدخال جديد');
-      } catch(err) {
-        showToast('⚠️ خطأ في قراءة الملف');
-      }
-    };
-    reader.readAsText(file);
+          mergeAndSave(arr);
+        } catch(err) { showToast('⚠️ خطأ في قراءة ملف CSV'); }
+      };
+      reader.readAsText(file);
+
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      showToast('⚠️ Excel غير مدعوم حالياً — استخدم CSV أو JSON');
+    }
   };
   input.click();
 }
+
+function mergeAndSave(arr) {
+  if (!arr || !arr.length) { showToast('⚠️ لا توجد بيانات في الملف'); return; }
+  if (!confirm('سيتم استيراد ' + arr.length + ' إدخال. هل تريد المتابعة؟')) return;
+  const existing = getEntries();
+  const merged = [...existing];
+  let added = 0;
+  arr.forEach(e => {
+    if (!merged.find(x => x.date === e.date)) {
+      merged.push(e);
+      added++;
+    }
+  });
+  merged.sort((a,b) => a.date.localeCompare(b.date));
+  saveEntries(merged);
+  renderHistory();
+  showToast('✓ تم الاستيراد — ' + added + ' إدخال جديد');
+}
+
 
 function clearAll() {
   if (confirm('هل تريد مسح جميع البيانات؟ لا يمكن التراجع.')) {
