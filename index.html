@@ -1781,29 +1781,72 @@ async function saveUsers(){
 }
 
 // ── LOGIN / LOGOUT ──
-function doLogin(){
+async function doLogin(){
+  const u = document.getElementById('li_user').value.trim();
+  const p = document.getElementById('li_pass').value;
+  const btn = document.getElementById('fp_sendBtn');
+
+  // Show loading on login button
+  const loginBtn = document.querySelector('.login-btn');
+  if(loginBtn){ loginBtn.textContent = '⏳ Signing in...'; loginBtn.disabled = true; }
+
   try {
-    const u = document.getElementById('li_user').value.trim();
-    const p = document.getElementById('li_pass').value;
-    const found = users.find(x => x.username === u && x.password === p && x.active !== false);
+    // ── Step 1: Init Firebase early so we can read users ──
+    var fbReady = false;
+    try { fbReady = initFirebase(); } catch(e){}
+
+    // ── Step 2: Fetch latest users from Firebase FIRST ──
+    if(fbReady){
+      try {
+        var fbUsers = await fbGet('users');
+        if(fbUsers && Object.keys(fbUsers).length){
+          var fbArr = Object.values(fbUsers).map(function(usr){
+            try { usr.perms = typeof usr.perms==='string' ? JSON.parse(usr.perms) : (usr.perms||[]); } catch(e){ usr.perms=[]; }
+            usr.active = usr.active !== false && usr.active !== 'false';
+            usr.id     = Number(usr.id) || usr.id;
+            return usr;
+          });
+          if(fbArr.length){
+            users = fbArr;
+            localStorage.setItem('itam_users', JSON.stringify(users));
+          }
+        }
+      } catch(e){
+        console.warn('Could not fetch users from Firebase for login:', e.message);
+        // Fall back to localStorage users — already loaded
+      }
+    }
+
+    // ── Step 3: Now check credentials against latest users ──
+    var found = users.find(function(x){
+      return x.username === u && x.password === p && x.active !== false;
+    });
+
     if(!found){
-      const err = document.getElementById('loginError');
-      err.style.display='block';
-      setTimeout(()=>err.style.display='none', 3500);
+      var errEl = document.getElementById('loginError');
+      errEl.textContent = 'Invalid username or password. Please try again.';
+      errEl.style.display = 'block';
+      setTimeout(function(){ errEl.style.display='none'; }, 3500);
+      if(loginBtn){ loginBtn.textContent = 'Sign In →'; loginBtn.disabled = false; }
       return;
     }
+
+    // ── Step 4: Login success ──
     currentUser = found;
-    document.getElementById('loginScreen').style.display='none';
-    document.getElementById('li_pass').value='';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('li_pass').value = '';
     document.getElementById('userPillName').textContent = found.name.split(' ')[0];
     document.getElementById('userAvatar').textContent   = found.name[0].toUpperCase();
+    if(loginBtn){ loginBtn.textContent = 'Sign In →'; loginBtn.disabled = false; }
     applyPermissions();
     onLoginSuccess();
+
   } catch(e) {
     console.error('Login error:', e);
-    const err = document.getElementById('loginError');
-    err.textContent = 'Login error: ' + e.message;
-    err.style.display='block';
+    var errEl2 = document.getElementById('loginError');
+    errEl2.textContent = 'Login error: ' + e.message;
+    errEl2.style.display = 'block';
+    if(loginBtn){ loginBtn.textContent = 'Sign In →'; loginBtn.disabled = false; }
   }
 }
 
@@ -4340,22 +4383,15 @@ function exportCSV(){
 //  INIT
 // ════════════════════════════════════════════
 window.addEventListener('load', () => {
-  try {
-    checkResetToken();
-  } catch(e) {
-    console.warn('Reset token check failed:', e);
-  }
+  try { checkResetToken(); } catch(e) {}
   document.querySelectorAll('.overlay').forEach(el => {
     el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
   });
-  try {
-    document.getElementById('addBtn').style.display = 'none';
-  } catch(e) {}
-  // Make sure login screen is visible
+  try { document.getElementById('addBtn').style.display = 'none'; } catch(e) {}
   const ls = document.getElementById('loginScreen');
   if(ls) ls.style.display = 'flex';
-  // Pre-load users from GAS so login works with latest user list
-  syncUsersFromGAS().catch(function(){});
+  // Pre-init Firebase so it's ready when user clicks Sign In
+  try { initFirebase(); } catch(e) {}
 });
 
 // Called after successful login
