@@ -1738,39 +1738,46 @@ const DEFAULT_USERS = [
 
 let users    = load('itam_users', DEFAULT_USERS);
 
-// ── Sync users from GAS on startup (if configured) ──
+// ── Sync users from Firebase on page load ──
 async function syncUsersFromGAS() {
-  if (!GAS_URL) return;
-  try {
-    var data = await gasCall('getUsers');
-    if (data && data.length) {
-      // Merge: keep local users, add any from server not in local
-      var serverUsers = data.map(function(u) {
-        if (typeof u.perms === 'string') {
-          try { u.perms = JSON.parse(u.perms); } catch(e) {}
+  // Try Firebase first
+  if (_fbDb) {
+    try {
+      var fbUsers = await fbGet('users');
+      if (fbUsers && Object.keys(fbUsers).length) {
+        var fbUserArr = Object.values(fbUsers).map(function(u) {
+          try { u.perms = typeof u.perms === 'string' ? JSON.parse(u.perms) : (u.perms || []); } catch(e) { u.perms = []; }
+          u.active = u.active !== false && u.active !== 'false';
+          u.id     = Number(u.id) || u.id;
+          return u;
+        });
+        if (fbUserArr.length) {
+          users = fbUserArr;
+          localStorage.setItem('itam_users', JSON.stringify(users));
+          console.log('Users loaded from Firebase:', users.length);
+          return;
         }
-        u.active = u.active !== false && u.active !== 'false';
-        u.id     = Number(u.id) || u.id;
-        return u;
-      });
-      // Server is source of truth for users
-      users = serverUsers;
-      localStorage.setItem('itam_users', JSON.stringify(users));
+      }
+    } catch(e) {
+      console.warn('Could not load users from Firebase:', e.message);
     }
-  } catch(e) {
-    console.warn('Could not load users from GAS:', e.message);
-    // Fall back to localStorage — already loaded above
   }
+  // Fallback: localStorage (already loaded at top)
+  console.log('Users from localStorage:', users.length);
 }
 let currentUser = null;
 let editingUserId = null;
 
-function saveUsers(){
+async function saveUsers(){
   localStorage.setItem('itam_users', JSON.stringify(users));
-  // Save to Firebase
-  fbSaveUsers(users).catch(function(e){
+  // Save to Firebase — await to ensure it's written before continuing
+  try {
+    await fbSaveUsers(users);
+    console.log('Users saved to Firebase:', users.length, 'users');
+  } catch(e) {
     console.warn('Could not sync users to Firebase:', e.message);
-  });
+    notify('Warning: users saved locally only', 'warn');
+  }
 }
 
 // ── LOGIN / LOGOUT ──
@@ -1869,7 +1876,7 @@ function openChangePass(){
   document.getElementById('changePassModal').classList.add('open');
   document.getElementById('userMenu').classList.remove('open');
 }
-function doChangePass(){
+async function doChangePass(){
   const old=document.getElementById('cp_old').value;
   const nw=document.getElementById('cp_new').value;
   const cf=document.getElementById('cp_confirm').value;
@@ -1956,7 +1963,7 @@ function highlightPerm(id){
   lbl.style.background=cb.checked?'#dbeafe':'var(--gray2)';
   lbl.style.borderColor=cb.checked?'#93c5fd':'var(--gray3)';
 }
-function saveUser(){
+async function saveUser(){
   const name=document.getElementById('u_name').value.trim();
   const username=document.getElementById('u_username').value.trim().toLowerCase();
   const pass=document.getElementById('u_pass').value;
@@ -1981,18 +1988,25 @@ function saveUser(){
     localStorage.setItem('itam_nextUserId',JSON.stringify(_nextUserId));
     notify(`User "${name}" created`,'success');
   }
-  saveUsers(); closeModal('userModal'); renderUsers();
-  if(GAS_URL) gasCall('saveUser',{user:editingUserId?users.find(u=>u.id===editingUserId):users[users.length-1]}).catch(()=>{});
+  // Await Firebase save before closing modal
+  await saveUsers();
+  closeModal('userModal');
+  renderUsers();
+  notify(editingUserId ? 'User updated' : 'User created and saved', 'success');
 }
-function deleteUser(id){
+async function deleteUser(id){
   if(!confirm('Delete this user?'))return;
-  users=users.filter(u=>u.id!==id); saveUsers(); renderUsers(); notify('User deleted','success');
-  if(GAS_URL) gasCall('deleteUser',{id}).catch(()=>{});
+  users=users.filter(function(u){ return u.id!==id; });
+  await saveUsers();
+  renderUsers();
+  notify('User deleted', 'success');
 }
-function toggleUserActive(id){
+async function toggleUserActive(id){
   const u=users.find(x=>x.id===id); if(!u)return;
-  u.active=!u.active; saveUsers(); renderUsers();
-  notify(`User ${u.active?'activated':'deactivated'}`,'success');
+  u.active = !u.active;
+  await saveUsers();
+  renderUsers();
+  notify('User ' + (u.active ? 'activated' : 'deactivated'), 'success');
 }
 
 
@@ -2301,15 +2315,15 @@ function importUsersBackup(input) {
   var file = input.files[0];
   if (!file) return;
   var reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = async function(e) {
     try {
       var imported = JSON.parse(e.target.result);
       if (!Array.isArray(imported)) throw new Error('Invalid format');
       if (!confirm('Replace all users with ' + imported.length + ' users from backup?')) return;
       users = imported;
-      saveUsers();
+      await saveUsers();
       renderUsers();
-      notify('✅ ' + imported.length + ' users restored', 'success');
+      notify('Users restored: ' + imported.length, 'success');
     } catch(err) {
       notify('Invalid backup file: ' + err.message, 'error');
     }
