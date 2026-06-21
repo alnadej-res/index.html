@@ -166,6 +166,43 @@
    ════════════════════════════════════════════ */
 
 /* ── Hamburger button (mobile only) ── */
+/* ── MAINTENANCE MODULE ── */
+.maint-type-badge {
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;
+}
+.maint-hardware  { background:#fff3e0;color:#e65100; }
+.maint-software  { background:#e3f2fd;color:#1565c0; }
+.maint-network   { background:#f3e5f5;color:#6a1b9a; }
+.maint-cleaning  { background:#e8f5e9;color:#2e7d32; }
+.maint-repair    { background:#fce4ec;color:#880e4f; }
+.maint-upgrade   { background:#e0f7fa;color:#006064; }
+.maint-other     { background:#f5f5f5;color:#424242; }
+.maint-status-open     { background:#fff3e0;color:#e65100;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700; }
+.maint-status-progress { background:#e3f2fd;color:#1565c0;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700; }
+.maint-status-done     { background:#e8f5e9;color:#2e7d32;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700; }
+.maint-card {
+  background:var(--white);border-radius:var(--radius);
+  box-shadow:var(--shadow);margin-bottom:12px;
+  border-left:4px solid var(--yellow);overflow:hidden;
+  transition:box-shadow .2s;
+}
+.maint-card:hover { box-shadow:var(--shadow2); }
+.maint-card-hd {
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--gray3);
+  flex-wrap:wrap;gap:8px;
+}
+.maint-card-bd { padding:12px 16px;font-size:13px;color:var(--text2);line-height:1.7; }
+.maint-card-ft { padding:8px 16px;border-top:1px solid var(--gray3);display:flex;gap:8px;flex-wrap:wrap;background:var(--gray2); }
+.maint-monthly-card {
+  background:var(--white);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:18px;text-align:center;
+  border-top:3px solid var(--blue);
+}
+.maint-monthly-val { font-size:32px;font-weight:800;color:var(--blue); }
+.maint-monthly-lbl { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-top:4px; }
+
 .btn-refresh {
   display:flex;align-items:center;gap:6px;
   background:var(--gray2);border:1px solid var(--gray3);
@@ -767,6 +804,7 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
     <button class="nav-btn" onclick="nav('analytics',this)"><span class="nav-icon">📈</span>Analytics</button>
     <button class="nav-btn" onclick="nav('history',this)"><span class="nav-icon">📋</span>History Log</button>
     <button class="nav-btn" onclick="nav('reports',this)"><span class="nav-icon">📑</span>Reports</button>
+    <button class="nav-btn" onclick="nav('maintenance',this)"><span class="nav-icon">🔧</span>Maintenance<span class="nav-badge" id="maintBadge" style="display:none"></span></button>
     <button class="nav-btn" id="alertsNav" onclick="nav('alerts',this)"><span class="nav-icon">🔔</span>Alerts<span class="nav-badge" id="alertBadge" style="display:none"></span></button>
     <div class="nav-section">System</div>
     <button class="nav-btn" onclick="nav('settings',this)"><span class="nav-icon">⚙</span>Settings</button>
@@ -885,6 +923,56 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
         <div class="chart-grid"><div class="chart-card"><div class="chart-title">Asset Age</div><div class="chart-sub">Years since purchase</div><canvas id="cAge" height="220"></canvas></div><div class="chart-card"><div class="chart-title">Warranty Status</div><div class="chart-sub">In / expired / unknown</div><canvas id="cWar" height="220"></canvas></div></div>
         <div id="typeOut"></div>
       </div>
+    </div>
+
+    <!-- ═══ MAINTENANCE ═══ -->
+    <div class="page" id="page-maintenance">
+      <div class="page-header">
+        <div><div class="page-title">Maintenance Log</div><div class="page-sub">Track all maintenance activities for every asset</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost" onclick="exportMaintenancePDF()">📄 Monthly Report PDF</button>
+          <button class="add-btn" onclick="openAddMaintenance()">+ Log Maintenance</button>
+        </div>
+      </div>
+
+      <!-- KPI Row -->
+      <div class="kpi-row" id="maintKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:20px"></div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar" style="margin-bottom:16px">
+        <div class="fg"><label>Search</label><input id="mSearch" placeholder="Asset name, code..." oninput="renderMaintenance()"></div>
+        <div class="fg"><label>Month</label><input type="month" id="mMonth" onchange="renderMaintenance()"></div>
+        <div class="fg"><label>Type</label>
+          <select id="mType" onchange="renderMaintenance()">
+            <option value="">All Types</option>
+            <option>Hardware Repair</option>
+            <option>Software Issue</option>
+            <option>Network Problem</option>
+            <option>Cleaning / Dust</option>
+            <option>Part Replacement</option>
+            <option>Upgrade</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="fg"><label>Status</label>
+          <select id="mStatus" onchange="renderMaintenance()">
+            <option value="">All</option>
+            <option>Open</option>
+            <option>In Progress</option>
+            <option>Done</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost" onclick="resetMaintFilters()">✕ Reset</button>
+      </div>
+
+      <!-- Monthly Chart -->
+      <div class="chart-grid" style="grid-template-columns:1fr 1fr;margin-bottom:20px" id="maintChartRow">
+        <div class="chart-card"><div class="chart-title">Maintenance by Type</div><div class="chart-sub">This month's breakdown</div><canvas id="maintTypeChart" height="200"></canvas></div>
+        <div class="chart-card"><div class="chart-title">Monthly Trend</div><div class="chart-sub">Last 6 months</div><canvas id="maintTrendChart" height="200"></canvas></div>
+      </div>
+
+      <!-- Records -->
+      <div id="maintRecordsOut"></div>
     </div>
 
     <!-- ═══ REPORTS ═══ -->
@@ -1255,6 +1343,7 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
     <div class="modal-bd" id="detailBody"></div>
     <div class="modal-ft">
       <button class="btn btn-ghost" onclick="closeModal('detailModal')">Close</button>
+      <button class="btn btn-ghost" onclick="closeModal('detailModal');nav('maintenance',document.querySelector('[onclick*=maintenance]'));openAddMaintenance(detailId)" style="color:var(--yellow);border-color:var(--yellow)">🔧 Log Maintenance</button>
       <button class="btn btn-primary" onclick="editFromDetail()">✏ Edit</button>
     </div>
   </div>
@@ -1360,6 +1449,74 @@ input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--bl
     <img id="lightboxImg" src="" alt="" style="max-width:90vw;max-height:80vh;object-fit:contain;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.6)">
     <div style="margin-top:12px;display:flex;gap:8px;justify-content:center">
       <a id="lightboxDownload" download="" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer">⬇ Download</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD MAINTENANCE MODAL ── -->
+<div class="overlay" id="maintModal">
+  <div class="modal" style="width:min(620px,97vw)">
+    <div class="modal-hd"><div class="modal-title" id="maintModalTitle">Log Maintenance</div><button class="modal-x" onclick="closeModal('maintModal')">✕</button></div>
+    <div class="modal-bd">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Asset *</label>
+          <select id="m_asset" onchange="autoFillMaintAsset()">
+            <option value="">Select Asset</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Maintenance Type *</label>
+          <select id="m_type">
+            <option value="">Select Type</option>
+            <option>Hardware Repair</option>
+            <option>Software Issue</option>
+            <option>Network Problem</option>
+            <option>Cleaning / Dust</option>
+            <option>Part Replacement</option>
+            <option>Upgrade</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" id="m_date">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="m_status">
+            <option>Open</option>
+            <option>In Progress</option>
+            <option>Done</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Technician</label>
+          <input id="m_tech" placeholder="Technician name">
+        </div>
+        <div class="form-group">
+          <label>Cost (SAR)</label>
+          <input type="number" id="m_cost" placeholder="0" min="0">
+        </div>
+        <div class="form-group full">
+          <label>Issue Description *</label>
+          <textarea id="m_issue" placeholder="Describe the problem..." style="min-height:80px"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Action Taken / Solution</label>
+          <textarea id="m_action" placeholder="What was done to fix it..." style="min-height:80px"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Parts Replaced</label>
+          <input id="m_parts" placeholder="e.g. RAM, HDD, Screen (leave blank if none)">
+        </div>
+      </div>
+      <!-- Asset Info Preview -->
+      <div id="m_assetInfo" style="display:none;background:var(--blue-light);border:1px solid #93c5fd;border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px;color:var(--navy)"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('maintModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMaintenance()">💾 Save Record</button>
     </div>
   </div>
 </div>
@@ -2433,6 +2590,7 @@ function nav(id,btn){
   if(id==='analytics'){renderPivot();populateAnalyticsFilters();}
   if(id==='history') renderHistory();
   if(id==='reports') renderReports();
+  if(id==='maintenance'){ loadMaintenance().then(function(){ renderMaintenance(); updateMaintBadge(); }); }
   if(id==='alerts')  renderAlerts();
   if(id==='settings') renderSettings();
 }
@@ -3962,6 +4120,9 @@ async function refreshAllData() {
       await syncImagesFromCloudinary();
     } catch(e) {}
 
+    // 3b. Reload maintenance
+    try { await loadMaintenance(); } catch(e) {}
+
     // 4. Re-render current page
     renderDashboard();
     var ap = document.querySelector('.page.active');
@@ -4022,6 +4183,402 @@ window.addEventListener('resize', function() {
   }
 });
 
+
+// ════════════════════════════════════════════
+//  MAINTENANCE MODULE
+// ════════════════════════════════════════════
+var maintenanceRecords = [];
+var _maintCharts = {};
+var _editingMaintId = null;
+
+// ── Load maintenance from Firebase ──
+async function loadMaintenance() {
+  var local = localStorage.getItem('itam_maintenance');
+  if (local) {
+    try { maintenanceRecords = JSON.parse(local); } catch(e){ maintenanceRecords = []; }
+  }
+  if (!_fbDb) return;
+  try {
+    var fbMaint = await fbGet('maintenance');
+    if (fbMaint) {
+      maintenanceRecords = Object.values(fbMaint).sort(function(a,b){
+        return (b.date||'').localeCompare(a.date||'');
+      });
+      localStorage.setItem('itam_maintenance', JSON.stringify(maintenanceRecords));
+    }
+  } catch(e) { console.warn('Maintenance load error:', e.message); }
+}
+
+// ── Save maintenance record to Firebase ──
+async function saveMaintRecord(record) {
+  localStorage.setItem('itam_maintenance', JSON.stringify(maintenanceRecords));
+  if (!_fbDb) return;
+  try {
+    await fbSet('maintenance/' + record.id, record);
+  } catch(e) { console.warn('Maintenance Firebase save error:', e.message); }
+}
+
+async function deleteMaintRecord(id) {
+  maintenanceRecords = maintenanceRecords.filter(function(r){ return r.id !== id; });
+  localStorage.setItem('itam_maintenance', JSON.stringify(maintenanceRecords));
+  if (_fbDb) {
+    try { await fbRemove('maintenance/' + id); } catch(e){}
+  }
+}
+
+// ── Real-time maintenance listener ──
+function startMaintenanceListener() {
+  if (!_fbDb) return;
+  _fbDb.ref('maintenance').on('value', function(snap) {
+    var data = snap.val();
+    if (!data) { maintenanceRecords = []; return; }
+    var arr = Object.values(data).sort(function(a,b){
+      return (b.date||'').localeCompare(a.date||'');
+    });
+    maintenanceRecords = arr;
+    localStorage.setItem('itam_maintenance', JSON.stringify(arr));
+    // Update badge
+    updateMaintBadge();
+    // Re-render if page open
+    var ap = document.querySelector('.page.active');
+    if (ap && ap.id === 'page-maintenance') renderMaintenance();
+  });
+}
+
+function updateMaintBadge() {
+  var open = maintenanceRecords.filter(function(r){ return r.status === 'Open' || r.status === 'In Progress'; }).length;
+  var badge = document.getElementById('maintBadge');
+  if (badge) { badge.textContent = open; badge.style.display = open ? 'inline' : 'none'; }
+}
+
+// ── Maintenance type → CSS class ──
+function maintTypeClass(t) {
+  var map = {
+    'Hardware Repair':'maint-hardware','Software Issue':'maint-software',
+    'Network Problem':'maint-network','Cleaning / Dust':'maint-cleaning',
+    'Part Replacement':'maint-repair','Upgrade':'maint-upgrade','Other':'maint-other'
+  };
+  return map[t] || 'maint-other';
+}
+function maintStatusClass(s) {
+  return s === 'Open' ? 'maint-status-open' : s === 'In Progress' ? 'maint-status-progress' : 'maint-status-done';
+}
+
+// ── Open add/edit modal ──
+function openAddMaintenance(assetCode) {
+  _editingMaintId = null;
+  document.getElementById('maintModalTitle').textContent = 'Log Maintenance';
+  // Populate asset dropdown
+  var sel = document.getElementById('m_asset');
+  sel.innerHTML = '<option value="">Select Asset</option>';
+  assets.forEach(function(a) {
+    var opt = new Option(a.code + ' — ' + a.name, a.code);
+    sel.appendChild(opt);
+  });
+  if (assetCode) sel.value = assetCode;
+  // Reset fields
+  ['m_issue','m_action','m_parts'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('m_type').value   = '';
+  document.getElementById('m_status').value = 'Open';
+  document.getElementById('m_tech').value   = currentUser ? currentUser.name : '';
+  document.getElementById('m_cost').value   = '';
+  document.getElementById('m_date').value   = today();
+  document.getElementById('m_assetInfo').style.display = 'none';
+  if (assetCode) autoFillMaintAsset();
+  document.getElementById('maintModal').classList.add('open');
+}
+
+function openEditMaintenance(id) {
+  var r = maintenanceRecords.find(function(x){ return x.id === id; });
+  if (!r) return;
+  _editingMaintId = id;
+  document.getElementById('maintModalTitle').textContent = 'Edit Maintenance Record';
+  var sel = document.getElementById('m_asset');
+  sel.innerHTML = '<option value="">Select Asset</option>';
+  assets.forEach(function(a) {
+    var opt = new Option(a.code + ' — ' + a.name, a.code);
+    sel.appendChild(opt);
+  });
+  sel.value = r.assetCode || '';
+  document.getElementById('m_type').value   = r.type || '';
+  document.getElementById('m_date').value   = r.date || today();
+  document.getElementById('m_status').value = r.status || 'Open';
+  document.getElementById('m_tech').value   = r.technician || '';
+  document.getElementById('m_cost').value   = r.cost || '';
+  document.getElementById('m_issue').value  = r.issue || '';
+  document.getElementById('m_action').value = r.action || '';
+  document.getElementById('m_parts').value  = r.parts || '';
+  autoFillMaintAsset();
+  document.getElementById('maintModal').classList.add('open');
+}
+
+function autoFillMaintAsset() {
+  var code = document.getElementById('m_asset').value;
+  var info = document.getElementById('m_assetInfo');
+  if (!code) { info.style.display = 'none'; return; }
+  var a = assets.find(function(x){ return x.code === code; });
+  if (!a) { info.style.display = 'none'; return; }
+  info.style.display = 'block';
+  info.innerHTML = '<b>' + a.name + '</b> &nbsp;|&nbsp; Type: ' + a.type +
+    ' &nbsp;|&nbsp; Branch: ' + a.branch + ' &nbsp;|&nbsp; Dept: ' + a.dept +
+    (a.employee ? ' &nbsp;|&nbsp; Employee: ' + a.employee : '') +
+    (a.warranty ? ' &nbsp;|&nbsp; Warranty: ' + a.warranty : '');
+}
+
+async function saveMaintenance() {
+  var assetCode = document.getElementById('m_asset').value;
+  var type      = document.getElementById('m_type').value;
+  var date      = document.getElementById('m_date').value;
+  var issue     = document.getElementById('m_issue').value.trim();
+  if (!assetCode || !type || !date || !issue) {
+    notify('Please fill Asset, Type, Date, and Issue Description', 'warn'); return;
+  }
+  var a = assets.find(function(x){ return x.code === assetCode; });
+  var record = {
+    id:         _editingMaintId || ('M' + Date.now()),
+    assetCode:  assetCode,
+    assetName:  a ? a.name : assetCode,
+    assetType:  a ? a.type : '',
+    branch:     a ? a.branch : '',
+    dept:       a ? a.dept : '',
+    type:       type,
+    date:       date,
+    status:     document.getElementById('m_status').value,
+    technician: document.getElementById('m_tech').value.trim(),
+    cost:       Number(document.getElementById('m_cost').value) || 0,
+    issue:      issue,
+    action:     document.getElementById('m_action').value.trim(),
+    parts:      document.getElementById('m_parts').value.trim(),
+    loggedBy:   currentUser ? currentUser.name : '',
+    createdAt:  _editingMaintId ? (maintenanceRecords.find(function(r){return r.id===_editingMaintId;})||{}).createdAt || new Date().toISOString() : new Date().toISOString(),
+  };
+  if (_editingMaintId) {
+    var idx = maintenanceRecords.findIndex(function(r){ return r.id === _editingMaintId; });
+    if (idx >= 0) maintenanceRecords[idx] = record;
+  } else {
+    maintenanceRecords.unshift(record);
+    // Change asset status to Maintenance
+    var ai = assets.findIndex(function(x){ return x.code === assetCode; });
+    if (ai >= 0 && record.status !== 'Done') {
+      assets[ai].status = 'Maintenance';
+      await fbSaveAsset(assets[ai]).catch(function(){});
+    }
+  }
+  await saveMaintRecord(record);
+  closeModal('maintModal');
+  renderMaintenance();
+  updateMaintBadge();
+  notify('Maintenance record saved', 'success');
+  // Log to history
+  fbSaveHistory({date:today(),code:assetCode,name:record.assetName,action:'Maintenance',from:record.type,to:record.status,notes:issue,user:currentUser?currentUser.name:''}).catch(function(){});
+}
+
+// ── Get filtered maintenance records ──
+function getMaintFiltered() {
+  var search = (document.getElementById('mSearch')?.value || '').toLowerCase();
+  var month  = document.getElementById('mMonth')?.value || '';
+  var type   = document.getElementById('mType')?.value || '';
+  var status = document.getElementById('mStatus')?.value || '';
+  return maintenanceRecords.filter(function(r) {
+    var matchSearch = !search || [r.assetCode,r.assetName,r.technician,r.issue].join(' ').toLowerCase().includes(search);
+    var matchMonth  = !month || (r.date && r.date.startsWith(month));
+    var matchType   = !type || r.type === type;
+    var matchStatus = !status || r.status === status;
+    return matchSearch && matchMonth && matchType && matchStatus;
+  });
+}
+
+function resetMaintFilters() {
+  ['mSearch','mMonth','mType','mStatus'].forEach(function(id){ var el=document.getElementById(id); if(el)el.value=''; });
+  renderMaintenance();
+}
+
+// ── Render Maintenance page ──
+function renderMaintenance() {
+  var filtered = getMaintFiltered();
+  // KPIs
+  var now = new Date();
+  var thisMonth = now.toISOString().slice(0,7);
+  var thisMonthRecs = maintenanceRecords.filter(function(r){ return r.date && r.date.startsWith(thisMonth); });
+  var totalCost = thisMonthRecs.reduce(function(s,r){ return s+(r.cost||0); }, 0);
+  var openCount = maintenanceRecords.filter(function(r){ return r.status==='Open'||r.status==='In Progress'; }).length;
+  document.getElementById('maintKpiRow').innerHTML = [
+    ['This Month',  thisMonthRecs.length, 'var(--blue)'],
+    ['Total Records', maintenanceRecords.length, 'var(--navy)'],
+    ['Open / In Progress', openCount, openCount>0?'var(--yellow)':'var(--green)'],
+    ['Monthly Cost', 'SAR '+totalCost.toLocaleString(), 'var(--red)'],
+  ].map(function(k){ return '<div class="kpi" style="--kpi-color:'+k[2]+'">'
+    +'<div class="kpi-label">'+k[0]+'</div>'
+    +'<div class="kpi-val">'+k[1]+'</div>'
+    +'</div>'; }).join('');
+
+  // Charts
+  renderMaintCharts(filtered);
+
+  // Records
+  var out = document.getElementById('maintRecordsOut');
+  if (!filtered.length) {
+    out.innerHTML = '<div class="empty"><div class="empty-icon">🔧</div>No maintenance records match the filter.</div>';
+    return;
+  }
+  out.innerHTML = '<div class="tbl-wrap"><div class="tbl-toolbar"><div class="card-title">Maintenance Records ('+filtered.length+')</div></div>'
+    + '<table><thead><tr><th>Date</th><th>Asset</th><th>Type</th><th>Issue</th><th>Action Taken</th><th>Parts</th><th>Tech</th><th>Cost</th><th>Status</th><th>Actions</th></tr></thead>'
+    + '<tbody>' + filtered.map(function(r){ return '<tr>'
+      +'<td style="font-size:12px;white-space:nowrap">'+r.date+'</td>'
+      +'<td><div style="font-weight:700;font-size:12px">'+r.assetCode+'</div><div style="font-size:11px;color:var(--text3)">'+r.assetName+'</div></td>'
+      +'<td><span class="maint-type-badge '+maintTypeClass(r.type)+'">'+r.type+'</span></td>'
+      +'<td style="font-size:12px;max-width:200px">'+r.issue+'</td>'
+      +'<td style="font-size:12px;max-width:160px;color:var(--text2)">'+(r.action||'<span style="color:var(--text3)">—</span>')+'</td>'
+      +'<td style="font-size:12px">'+(r.parts||'<span style="color:var(--text3)">—</span>')+'</td>'
+      +'<td style="font-size:12px">'+(r.technician||'—')+'</td>'
+      +'<td style="font-size:12px;white-space:nowrap">'+(r.cost?'SAR '+r.cost:'—')+'</td>'
+      +'<td><span class="'+maintStatusClass(r.status)+'">'+r.status+'</span></td>'
+      +'<td style="white-space:nowrap">'
+        +'<button class="btn-icon" onclick="openEditMaintenance(\''+r.id+'\')">✏</button>'
+        +'<button class="btn-icon del" onclick="confirmDeleteMaint(\''+r.id+'\')">🗑</button>'
+        +'<button class="btn-icon" onclick="maintMarkDone(\''+r.id+'\')" title="Mark Done">✅</button>'
+      +'</td>'
+      +'</tr>'; }).join('')
+    +'</tbody></table></div>';
+}
+
+async function confirmDeleteMaint(id) {
+  if (!confirm('Delete this maintenance record?')) return;
+  await deleteMaintRecord(id);
+  renderMaintenance(); updateMaintBadge();
+  notify('Record deleted', 'success');
+}
+
+async function maintMarkDone(id) {
+  var r = maintenanceRecords.find(function(x){ return x.id===id; });
+  if (!r) return;
+  r.status = 'Done';
+  await saveMaintRecord(r);
+  // Optionally set asset back to Active
+  var a = assets.find(function(x){ return x.code===r.assetCode; });
+  if (a && a.status === 'Maintenance') {
+    a.status = 'Active';
+    await fbSaveAsset(a).catch(function(){});
+  }
+  renderMaintenance(); updateMaintBadge();
+  notify('Marked as Done', 'success');
+}
+
+// ── Maintenance Charts ──
+function renderMaintCharts(records) {
+  var COLORS = ['#2563eb','#7c3aed','#dc2626','#16a34a','#d97706','#0891b2','#c2410c'];
+  // By Type
+  var typeMap = {};
+  records.forEach(function(r){ typeMap[r.type]=(typeMap[r.type]||0)+1; });
+  if (_maintCharts.type) _maintCharts.type.destroy();
+  var tc = document.getElementById('maintTypeChart');
+  if (tc && Object.keys(typeMap).length) {
+    _maintCharts.type = new Chart(tc, {
+      type:'doughnut',
+      data:{ labels:Object.keys(typeMap), datasets:[{data:Object.values(typeMap),backgroundColor:COLORS,borderColor:'#fff',borderWidth:2}] },
+      options:{responsive:true,plugins:{legend:{position:'right',labels:{font:{size:10}}}}}
+    });
+  }
+  // Monthly trend (last 6 months)
+  var months = [];
+  var now = new Date();
+  for (var i=5;i>=0;i--) {
+    var d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push(d.toISOString().slice(0,7));
+  }
+  var monthCounts = months.map(function(m){
+    return maintenanceRecords.filter(function(r){ return r.date && r.date.startsWith(m); }).length;
+  });
+  var monthLabels = months.map(function(m){ return m.slice(0,7); });
+  if (_maintCharts.trend) _maintCharts.trend.destroy();
+  var trc = document.getElementById('maintTrendChart');
+  if (trc) {
+    _maintCharts.trend = new Chart(trc, {
+      type:'bar',
+      data:{ labels:monthLabels, datasets:[{label:'Maintenance Count',data:monthCounts,backgroundColor:'#2563eb',borderRadius:5,borderWidth:0}] },
+      options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10},stepSize:1},grid:{color:'#f1f5f9'}}}}
+    });
+  }
+}
+
+// ── Monthly PDF Report ──
+async function exportMaintenancePDF() {
+  var jspdf = window.jspdf;
+  if (!jspdf || !jspdf.jsPDF) { notify('PDF library loading...','warn'); return; }
+  var doc = new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  var W=210, now=new Date();
+  var monthStr = document.getElementById('mMonth')?.value || now.toISOString().slice(0,7);
+  var monthLabel = new Date(monthStr+'-01').toLocaleString('en',{month:'long',year:'numeric'});
+  var filtered = getMaintFiltered().filter(function(r){ return r.date && r.date.startsWith(monthStr); });
+  var logo_b64 = COMPANY_LOGO;
+
+  // Header
+  doc.setFillColor(26,35,64); doc.rect(0,0,W,38,'F');
+  try { doc.addImage(logo_b64,'PNG',8,5,48,28); } catch(e){}
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('Monthly Maintenance Report', W/2, 16, {align:'center'});
+  doc.setFontSize(11); doc.setFont('helvetica','normal');
+  doc.text(COMPANY_NAME + '  —  ' + monthLabel, W/2, 25, {align:'center'});
+  doc.setFontSize(8);
+  doc.text('Generated: ' + now.toLocaleDateString('en-GB'), W/2, 32, {align:'center'});
+
+  // KPI boxes
+  var total = filtered.length;
+  var done  = filtered.filter(function(r){return r.status==='Done';}).length;
+  var open  = filtered.filter(function(r){return r.status!=='Done';}).length;
+  var cost  = filtered.reduce(function(s,r){return s+(r.cost||0);},0);
+  var kpis  = [['Total',total,'#2563eb'],['Done',done,'#16a34a'],['Open',open,'#d97706'],['Cost SAR',cost.toLocaleString(),'#dc2626']];
+  kpis.forEach(function(k,i){
+    var x=14+i*47,y=43;
+    var rgb=k[2].match(/\w\w/g).map(function(h){return parseInt(h,16);});
+    doc.setFillColor(rgb[0],rgb[1],rgb[2]); doc.roundedRect(x,y,42,18,2,2,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.text(String(k[1]),x+21,y+10,{align:'center'});
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.text(k[0],x+21,y+15,{align:'center'});
+  });
+
+  // Chart
+  var tc = document.getElementById('maintTypeChart');
+  if (tc) {
+    try { var img=tc.toDataURL('image/png',0.9); doc.addImage(img,'PNG',14,65,90,55); } catch(e){}
+  }
+  var trc = document.getElementById('maintTrendChart');
+  if (trc) {
+    try { var img2=trc.toDataURL('image/png',0.9); doc.addImage(img2,'PNG',108,65,90,55); } catch(e){}
+  }
+
+  // Summary by type table
+  var typeMap = {};
+  filtered.forEach(function(r){ if(!typeMap[r.type])typeMap[r.type]={count:0,cost:0}; typeMap[r.type].count++; typeMap[r.type].cost+=(r.cost||0); });
+  doc.autoTable({
+    head:[['Maintenance Type','Count','Total Cost (SAR)']],
+    body:Object.entries(typeMap).map(function(e){ return [e[0],e[1].count,'SAR '+e[1].cost]; }),
+    startY:124, theme:'grid',
+    headStyles:{fillColor:[26,35,64],textColor:255,fontStyle:'bold',fontSize:9},
+    bodyStyles:{fontSize:9},alternateRowStyles:{fillColor:[248,250,252]},
+    margin:{left:14,right:14},
+  });
+
+  // Detailed records table
+  var afterSummary = doc.lastAutoTable.finalY + 8;
+  doc.setFillColor(26,35,64); doc.rect(0,afterSummary-2,W,10,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(10); doc.setFont('helvetica','bold');
+  doc.text('Detailed Maintenance Records', 14, afterSummary+4);
+  doc.autoTable({
+    head:[['Date','Asset','Type','Issue','Action','Status','Cost']],
+    body:filtered.map(function(r){ return [r.date,r.assetCode+'\n'+r.assetName.slice(0,18),r.type,r.issue.slice(0,35),(r.action||'—').slice(0,30),r.status,r.cost?'SAR '+r.cost:'—']; }),
+    startY:afterSummary+10, theme:'grid',
+    headStyles:{fillColor:[37,99,235],textColor:255,fontStyle:'bold',fontSize:8},
+    bodyStyles:{fontSize:7,cellPadding:3},
+    alternateRowStyles:{fillColor:[248,250,252]},
+    margin:{left:14,right:14},
+    didDrawPage:function(){ addReportFooter(doc,W,now); }
+  });
+  addReportFooter(doc,W,now);
+  doc.save('AlNadeg_Maintenance_'+monthStr+'.pdf');
+  notify('Monthly Maintenance Report downloaded','success');
+}
 
 // ════════════════════════════════════════════
 //  REPORTS ENGINE
@@ -4427,6 +4984,7 @@ async function onLoginSuccess(){
     if (fbReady) {
       startFirebaseListener();
       startImageListener();
+      startMaintenanceListener();
     }
 
     // 5. Sheets polling every 30s for Sheet-side additions
