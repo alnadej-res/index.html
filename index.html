@@ -1764,18 +1764,27 @@ async function loadFromFirebase() {
       }
     }
 
-    // ── Branches ──
-    if (fbBranch) {
+    // ── Branches (using new format with name + depts) ──
+    if (fbBranch && Object.keys(fbBranch).length) {
       var bObj = {};
-      Object.entries(fbBranch).forEach(function(kv) {
-        bObj[kv[0]] = typeof kv[1] === 'string' ? kv[1].split(',') : kv[1];
+      Object.values(fbBranch).forEach(function(b) {
+        if (b && b.name) {
+          bObj[b.name] = b.depts ? b.depts.split(',').map(function(d){return d.trim();}).filter(Boolean) : [];
+        } else if (typeof b === 'object') {
+          // Legacy format
+          Object.keys(b).forEach(function(k){ bObj[k] = typeof b[k]==='string'?b[k].split(','):b[k]; });
+        }
       });
-      if (Object.keys(bObj).length) branches = bObj;
+      if (Object.keys(bObj).length) {
+        branches = bObj;
+        localStorage.setItem('itam_cache_branches', JSON.stringify(branches));
+      }
     }
 
     // ── Types ──
     if (fbTypes && Array.isArray(fbTypes) && fbTypes.length) {
       types = fbTypes;
+      localStorage.setItem('itam_cache_types', JSON.stringify(types));
     }
 
     updateCache();
@@ -2466,6 +2475,108 @@ function updateAlertBadge() {
   if (badge) { badge.textContent = cnt; badge.style.display = cnt ? 'inline' : 'none'; }
 }
 
+// ── Save branches to Firebase ──
+async function fbSaveBranches(branchesObj) {
+  if (!_fbDb) return false;
+  try {
+    // Convert arrays to comma strings for Firebase storage
+    var data = {};
+    Object.keys(branchesObj).forEach(function(branch) {
+      var depts = branchesObj[branch];
+      data[branch.replace(/[.#$\/\[\]]/g,'_')] = {
+        name: branch,
+        depts: Array.isArray(depts) ? depts.join(',') : (depts||'')
+      };
+    });
+    await _fbDb.ref('branches').set(data);
+    return true;
+  } catch(e) {
+    console.warn('fbSaveBranches error:', e.message);
+    return false;
+  }
+}
+
+// ── Save types to Firebase ──
+async function fbSaveTypes(typesArr) {
+  if (!_fbDb) return false;
+  try {
+    await _fbDb.ref('types').set(typesArr);
+    return true;
+  } catch(e) {
+    console.warn('fbSaveTypes error:', e.message);
+    return false;
+  }
+}
+
+// ── Load branches from Firebase ──
+async function fbLoadBranches() {
+  if (!_fbDb) return null;
+  try {
+    var data = await fbGet('branches');
+    if (!data) return null;
+    var result = {};
+    Object.values(data).forEach(function(b) {
+      if (b && b.name) {
+        result[b.name] = b.depts ? b.depts.split(',').map(function(d){return d.trim();}).filter(Boolean) : [];
+      }
+    });
+    return Object.keys(result).length ? result : null;
+  } catch(e) {
+    console.warn('fbLoadBranches error:', e.message);
+    return null;
+  }
+}
+
+// ── Load types from Firebase ──
+async function fbLoadTypes() {
+  if (!_fbDb) return null;
+  try {
+    var data = await fbGet('types');
+    return Array.isArray(data) && data.length ? data : null;
+  } catch(e) {
+    return null;
+  }
+}
+
+// ── Real-time branches listener ──
+function startBranchesListener() {
+  if (!_fbDb) return;
+  _fbDb.ref('branches').on('value', function(snap) {
+    var data = snap.val();
+    if (!data) return;
+    var result = {};
+    Object.values(data).forEach(function(b) {
+      if (b && b.name) {
+        result[b.name] = b.depts ? b.depts.split(',').map(function(d){return d.trim();}).filter(Boolean) : [];
+      }
+    });
+    if (Object.keys(result).length) {
+      branches = result;
+      localStorage.setItem('itam_cache_branches', JSON.stringify(branches));
+      // Refresh settings page if open
+      var ap = document.querySelector('.page.active');
+      if (ap && ap.id === 'page-settings') renderBranchSettings();
+      // Refresh filter dropdowns
+      populateFilters();
+    }
+  });
+}
+
+// ── Real-time types listener ──
+function startTypesListener() {
+  if (!_fbDb) return;
+  _fbDb.ref('types').on('value', function(snap) {
+    var data = snap.val();
+    if (Array.isArray(data) && data.length) {
+      types = data;
+      localStorage.setItem('itam_cache_types', JSON.stringify(types));
+      var ap = document.querySelector('.page.active');
+      if (ap && ap.id === 'page-settings') renderTypeSettings();
+      populateFilters();
+    }
+  });
+}
+
 // ── Write via GAS (optional) ──
 // ── Write via GAS (optional, if configured) ──
 async function gasCall(action, body={}) {
@@ -2534,25 +2645,20 @@ function importUsersBackup(input) {
 
 async function saveData() {
   updateCache();
-  const btn = document.getElementById('saveBtn');
-  if (GAS_URL) {
-    btn.textContent='⏳ Saving…'; btn.disabled=true;
-    try {
-      await Promise.all([
-        gasCall('saveBranches',{branches}),
-        gasCall('saveTypes',{types}),
-      ]);
-      btn.textContent='✓ Saved!'; btn.classList.add('saved');
-      setTimeout(()=>{btn.textContent='💾 Save';btn.classList.remove('saved');btn.disabled=false;},2000);
-      notify('Saved to Google Sheets','success');
-    } catch(e) {
-      btn.textContent='💾 Save'; btn.disabled=false;
-      notify('Saved locally (GAS error: '+e.message+')','warn');
-    }
-  } else {
-    btn.textContent='✓ Saved!'; btn.classList.add('saved');
-    setTimeout(()=>{btn.textContent='💾 Save';btn.classList.remove('saved');},2000);
-    notify('Settings saved locally','success');
+  var btn = document.getElementById('saveBtn');
+  btn.textContent = '⏳ Saving...'; btn.disabled = true;
+  try {
+    // Save branches and types to Firebase
+    await Promise.all([
+      fbSaveBranches(branches),
+      fbSaveTypes(types),
+    ]);
+    btn.textContent = '✓ Saved!'; btn.classList.add('saved');
+    setTimeout(function(){ btn.textContent='💾 Save Data'; btn.classList.remove('saved'); btn.disabled=false; }, 2000);
+    notify('Settings saved to Firebase', 'success');
+  } catch(e) {
+    btn.textContent = '💾 Save Data'; btn.disabled = false;
+    notify('Saved locally — Firebase error: ' + e.message, 'warn');
   }
 }
 
@@ -3137,7 +3243,7 @@ function addBranch(){
   if(branches[n]){notify('Branch already exists','warn');return;}
   branches[n]=[];
   document.getElementById('newBranchName').value='';
-  updateCache(); if(GAS_URL) gasCall('saveBranches',{branches}).catch(()=>{}); renderBranchSettings(); notify(`Branch "${n}" added`,'success');
+  updateCache(); fbSaveBranches(branches).catch(function(){}); renderBranchSettings(); notify('Branch added: ' + n, 'success');
 }
 function addDept(){
   const b=document.getElementById('newDeptBranch').value;
@@ -3147,7 +3253,7 @@ function addDept(){
   if(branches[b].includes(n)){notify('Department already exists','warn');return;}
   branches[b].push(n);
   document.getElementById('newDeptName').value='';
-  updateCache(); if(GAS_URL) gasCall('saveBranches',{branches}).catch(()=>{}); renderBranchSettings(); notify(`Department "${n}" added`,'success');
+  updateCache(); fbSaveBranches(branches).catch(function(){}); renderBranchSettings(); notify('Department added: ' + n, 'success');
 }
 function addType(){
   const n=document.getElementById('newTypeName').value.trim();
@@ -3155,24 +3261,24 @@ function addType(){
   if(types.includes(n)){notify('Type already exists','warn');return;}
   types.push(n);
   document.getElementById('newTypeName').value='';
-  updateCache(); if(GAS_URL) gasCall('saveTypes',{types}).catch(()=>{}); renderTypeSettings(); notify(`Type "${n}" added`,'success');
+  updateCache(); fbSaveTypes(types).catch(function(){}); renderTypeSettings(); notify('Type added: ' + n, 'success');
 }
 function deleteType(i){
   if(!confirm(`Delete type "${types[i]}"?`))return;
-  types.splice(i,1); updateCache(); if(GAS_URL) gasCall('saveTypes',{types}).catch(()=>{}); renderTypeSettings(); notify('Type deleted','success');
+  types.splice(i,1); updateCache(); fbSaveTypes(types).catch(function(){}); renderTypeSettings(); notify('Type deleted','success');
 }
 function deleteBranch(branch){
   const aCount=assets.filter(a=>a.branch===branch).length;
   if(aCount>0){notify(`Cannot delete: ${aCount} assets are in this branch`,'warn');return;}
   if(!confirm(`Delete branch "${branch}"?`))return;
-  delete branches[branch]; updateCache(); if(GAS_URL) gasCall('saveBranches',{branches}).catch(()=>{}); renderBranchSettings(); notify('Branch deleted','success');
+  delete branches[branch]; updateCache(); fbSaveBranches(branches).catch(function(){}); renderBranchSettings(); notify('Branch deleted','success');
 }
 function deleteDept(branch,idx){
   const d=branches[branch][idx];
   const aCount=assets.filter(a=>a.branch===branch&&a.dept===d).length;
   if(aCount>0){notify(`Cannot delete: ${aCount} assets in this department`,'warn');return;}
   if(!confirm(`Delete department "${d}"?`))return;
-  branches[branch].splice(idx,1); updateCache(); if(GAS_URL) gasCall('saveBranches',{branches}).catch(()=>{}); renderBranchSettings(); notify('Department deleted','success');
+  branches[branch].splice(idx,1); updateCache(); fbSaveBranches(branches).catch(function(){}); renderBranchSettings(); notify('Department deleted','success');
 }
 
 let _editBranchOld=null;
@@ -3190,7 +3296,7 @@ function saveEditBranch(){
   branches[n]=depts;
   assets.forEach(a=>{if(a.branch===_editBranchOld)a.branch=n;});
   history.forEach(h=>{if(h.from.includes(_editBranchOld))h.from=h.from.replace(_editBranchOld,n);if(h.to.includes(_editBranchOld))h.to=h.to.replace(_editBranchOld,n);});
-  updateCache(); if(GAS_URL) gasCall('saveBranches',{branches}).catch(()=>{}); closeModal('editBranchModal'); renderBranchSettings(); notify('Branch renamed','success');
+  updateCache(); fbSaveBranches(branches).catch(function(){}); closeModal('editBranchModal'); renderBranchSettings(); notify('Branch renamed','success');
 }
 
 let _editDeptBranch=null,_editDeptIdx=null;
@@ -3205,7 +3311,7 @@ function saveEditDept(){
   const old=branches[_editDeptBranch][_editDeptIdx];
   branches[_editDeptBranch][_editDeptIdx]=n;
   assets.forEach(a=>{if(a.branch===_editDeptBranch&&a.dept===old)a.dept=n;});
-  updateCache(); if(GAS_URL) gasCall('saveBranches',{branches}).catch(()=>{}); closeModal('editDeptModal'); renderBranchSettings(); notify('Department renamed','success');
+  updateCache(); fbSaveBranches(branches).catch(function(){}); closeModal('editDeptModal'); renderBranchSettings(); notify('Department renamed','success');
 }
 
 // ════════════════════════════════════════════
@@ -4134,6 +4240,13 @@ async function refreshAllData() {
       if (ap.id === 'page-reports')   renderReports();
     }
     updateAlertBadge();
+    // Also reload branches and types from Firebase
+    try {
+      var fbBranch = await fbLoadBranches();
+      if (fbBranch) { branches = fbBranch; populateFilters(); }
+      var fbTypesArr = await fbLoadTypes();
+      if (fbTypesArr) { types = fbTypesArr; populateFilters(); }
+    } catch(e) {}
     notify('Data refreshed — ' + assets.length + ' assets loaded', 'success');
 
   } catch(e) {
@@ -4985,6 +5098,8 @@ async function onLoginSuccess(){
       startFirebaseListener();
       startImageListener();
       startMaintenanceListener();
+      startBranchesListener();
+      startTypesListener();
     }
 
     // 5. Sheets polling every 30s for Sheet-side additions
