@@ -1032,11 +1032,63 @@ const fmtP = n => (Number(n)||0).toFixed(1)+'%';
 
 let charts = {};
 
+// ══════════════════════════════════════════════════════════════
+// FIREBASE – قراءة وكتابة مباشرة في السحابة
+// ══════════════════════════════════════════════════════════════
+const FB_URL = 'https://alnadej-dashboard-default-rtdb.firebaseio.com';
+
+async function fbGet(path) {
+  try {
+    const res = await fetch(FB_URL + path + '.json');
+    return await res.json();
+  } catch(e) { console.error('Firebase read error:', e); return null; }
+}
+
+async function fbSet(path, data) {
+  try {
+    await fetch(FB_URL + path + '.json', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  } catch(e) { console.error('Firebase write error:', e); }
+}
+
+// كاش محلي للبيانات
+const _db = {
+  entries:  null,
+  comms:    null,
+  thresh:   null,
+  invoices: null,
+  archives: null
+};
+
+// تحميل كل البيانات من Firebase عند فتح الصفحة
+async function loadFromFirebase() {
+  const data = await fbGet('/nadeg');
+  if (data && typeof data === 'object') {
+    _db.entries  = Array.isArray(data.entries)  ? data.entries  : [];
+    _db.comms    = data.comms    || null;
+    _db.thresh   = data.thresh   || null;
+    _db.invoices = data.invoices || {};
+    _db.archives = data.archives || {};
+  } else {
+    _db.entries  = [];
+    _db.comms    = null;
+    _db.thresh   = null;
+    _db.invoices = {};
+    _db.archives = {};
+  }
+}
+// ══════════════════════════════════════════════════════════════
+
+
 function getEntries() {
-  try { return JSON.parse(localStorage.getItem('nadeg_v2_entries') || '[]'); } catch(e) { return []; }
+  return _db.entries || [];
 }
 function saveEntries(arr) {
-  localStorage.setItem('nadeg_v2_entries', JSON.stringify(arr));
+  _db.entries = arr;
+  fbSet('/nadeg/entries', arr);
 }
 function getToday() { return new Date().toISOString().split('T')[0]; }
 
@@ -1787,7 +1839,7 @@ function mergeAndSave(arr) {
 
 function clearAll() {
   if (confirm('هل تريد مسح جميع البيانات؟ لا يمكن التراجع.')) {
-    localStorage.removeItem('nadeg_v2_entries');
+    _db.entries = []; fbSet('/nadeg/entries', []);
     showToast('تم المسح');
     renderOverview();
   }
@@ -1798,12 +1850,12 @@ function clearAll() {
 const DEFAULT_COMM = {'هنجرستيشن':0.25,'كيتا':0.34,'جاهز':0.20,'نينجا':0.30,'مرسول':0.20,'ذا شيفز':0.13,'تو يو':0.15};
 
 function getCommissions() {
-  try { return JSON.parse(localStorage.getItem('nadeg_comms')||'null') || DEFAULT_COMM; }
+  try { return _db.comms || DEFAULT_COMM; }
   catch(e) { return DEFAULT_COMM; }
 }
-function getThreshold() { return parseFloat(localStorage.getItem('nadeg_thresh')||'3'); }
+function getThreshold() { return parseFloat(_db.thresh || '3'); }
 function getMonthKey(date) { return date.slice(0,7); }
-function getInvoices() { try { return JSON.parse(localStorage.getItem('nadeg_invoices')||'{}'); } catch(e){return{};} }
+function getInvoices() { return _db.invoices || {}; }
 
 function renderSettings() {
   const comms = getCommissions();
@@ -1824,13 +1876,13 @@ function renderSettings() {
 function saveCommissionSettings() {
   const comms = {};
   APPS.forEach((app,i) => { comms[app] = (parseFloat(document.getElementById('comm_'+i).value)||0)/100; });
-  localStorage.setItem('nadeg_comms', JSON.stringify(comms));
+  _db.comms = comms; fbSet('/nadeg/comms', comms);
   showToast('✓ تم حفظ نسب العمولات');
   buildInputs();
 }
 
 function saveThreshold() {
-  localStorage.setItem('nadeg_thresh', parseFloat(document.getElementById('comp-threshold').value)||3);
+  _db.thresh = String(parseFloat(document.getElementById('comp-threshold').value)||3); fbSet('/nadeg/thresh', _db.thresh);
   showToast('✓ تم حفظ حد التنبيه');
 }
 
@@ -1868,7 +1920,7 @@ function saveInvoice() {
   const invoices = getInvoices();
   invoices[month] = {};
   APPS.forEach((app,i) => { invoices[month][app] = parseFloat(document.getElementById('inv_'+i).value)||0; });
-  localStorage.setItem('nadeg_invoices', JSON.stringify(invoices));
+  _db.invoices = invoices; fbSet('/nadeg/invoices', invoices);
   showToast('✓ تم حفظ تسوية '+month);
 }
 
@@ -1904,6 +1956,7 @@ function updateReconciliation() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+function _startApp() {
 buildInputs();
 
 // Set default date ranges FIRST before rendering
@@ -1932,6 +1985,8 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 renderOverview();
+}
+
 
 // Format all date inputs to show DD/MM/YYYY visually
 function showDateFmt(inp, lblId) {
@@ -1984,10 +2039,11 @@ formatDateInputs();
 let _currentArchiveMonth = null;
 
 function getArchives() {
-  try { return JSON.parse(localStorage.getItem('nadeg_v2_archives') || '{}'); } catch(e) { return {}; }
+  return _db.archives || {};
 }
 function saveArchives(obj) {
-  localStorage.setItem('nadeg_v2_archives', JSON.stringify(obj));
+  _db.archives = obj;
+  fbSet('/nadeg/archives', obj);
 }
 
 function archiveCurrentMonth() {
@@ -2530,6 +2586,9 @@ function toggleLang() {
 }
 
 
+
+// تحميل البيانات من Firebase ثم تشغيل التطبيق
+loadFromFirebase().then(_startApp);
 </script>
 
 
