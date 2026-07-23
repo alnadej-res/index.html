@@ -1955,37 +1955,6 @@ function updateReconciliation() {
   tbody.innerHTML = rows;
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-function _startApp() {
-buildInputs();
-
-// Set default date ranges FIRST before rendering
-const today = getToday();
-const thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];
-
-// Set default date ranges
-const _entries = getEntries();
-const _lastDate = _entries.length ? _entries[_entries.length-1].date : today;
-const _firstDate = _entries.length ? _entries[0].date : thirtyDaysAgo;
-document.getElementById('filter-from').value = _firstDate;
-showDateFmt(document.getElementById('filter-from'), 'filter-from-lbl');
-document.getElementById('filter-to').value = _lastDate;
-showDateFmt(document.getElementById('filter-to'), 'filter-to-lbl');
-document.getElementById('apps-from').value = thirtyDaysAgo;
-showDateFmt(document.getElementById('apps-from'), 'apps-from-lbl');
-document.getElementById('apps-to').value = today;
-showDateFmt(document.getElementById('apps-to'), 'apps-to-lbl');
-
-// Apply month filter by default on load
-window.addEventListener('DOMContentLoaded', function() {
-  setTimeout(function(){
-    const monthBtn = document.querySelectorAll('.qf-tab')[4];
-    if (monthBtn) applyQuickFilter('month', monthBtn);
-  }, 100);
-});
-
-renderOverview();
-}
 
 
 // Format all date inputs to show DD/MM/YYYY visually
@@ -2585,6 +2554,39 @@ function toggleLang() {
   if (customBtn) customBtn.textContent = t('tab_custom');
 }
 
+
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function _startApp() {
+buildInputs();
+
+// Set default date ranges FIRST before rendering
+const today = getToday();
+const thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0];
+
+// Set default date ranges
+const _entries = getEntries();
+const _lastDate = _entries.length ? _entries[_entries.length-1].date : today;
+const _firstDate = _entries.length ? _entries[0].date : thirtyDaysAgo;
+document.getElementById('filter-from').value = _firstDate;
+showDateFmt(document.getElementById('filter-from'), 'filter-from-lbl');
+document.getElementById('filter-to').value = _lastDate;
+showDateFmt(document.getElementById('filter-to'), 'filter-to-lbl');
+document.getElementById('apps-from').value = thirtyDaysAgo;
+showDateFmt(document.getElementById('apps-from'), 'apps-from-lbl');
+document.getElementById('apps-to').value = today;
+showDateFmt(document.getElementById('apps-to'), 'apps-to-lbl');
+
+// Apply month filter by default on load
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function(){
+    const monthBtn = document.querySelectorAll('.qf-tab')[4];
+    if (monthBtn) applyQuickFilter('month', monthBtn);
+  }, 100);
+});
+
+renderOverview();
+}
 
 
 // تحميل البيانات من Firebase ثم تشغيل التطبيق
